@@ -137,6 +137,39 @@ console.log("modelo:",`${modelo}`)
     res.send(cr);  
   }
 });
+//------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
+app.get("/listarAssentos", async(req,res)=>{ 
+  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+  let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
+
+  try{
+    //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
+    const connAttibs: ConnectionAttributes = {
+      user: process.env.ORACLE_DB_USER,
+      password: process.env.ORACLE_DB_PASSWORD,
+      connectionString: process.env.ORACLE_CONN_STR,
+    }
+    const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
+    let resultadoConsulta = await connection.execute("SELECT * FROM SYS.ASSENTOS");// EXECUÇÃO DO SELECT
+  
+    await connection.close();//FECHAMENTO DA CONECÇÃO
+    cr.status = "SUCCESS"; 
+    cr.message = "Dados obtidos";
+    cr.payload = resultadoConsulta.rows;
+    //RESPOSTA  SE OBTEVE RESPOSTA 200
+  }catch(e){
+    if(e instanceof Error){
+      cr.message = e.message;
+      console.log(e.message);
+    }else{
+      cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+    }
+  } finally {
+    res.send(cr);  
+  }
+
+});
+
 //-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------
 
 app.delete("/excluirAeronave", async(req,res)=>{

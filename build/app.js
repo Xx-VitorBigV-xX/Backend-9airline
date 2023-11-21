@@ -131,6 +131,38 @@ app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
+//------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
+app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+    let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
+    try {
+        //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
+        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.ASSENTOS"); // EXECUÇÃO DO SELECT
+        yield connection.close(); //FECHAMENTO DA CONECÇÃO
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resultadoConsulta.rows;
+        //RESPOSTA  SE OBTEVE RESPOSTA 200
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        res.send(cr);
+    }
+}));
 //-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------
 app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //UTILIZANDO A REQUISIÇÃO DELETE PARA FAZER UM DELETE NA TABELA AREONAVES
