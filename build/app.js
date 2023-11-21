@@ -13,13 +13,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 // recursos/modulos necessarios.
+//Iportações 
 const express_1 = __importDefault(require("express"));
 const oracledb_1 = __importDefault(require("oracledb"));
 const dotenv_1 = __importDefault(require("dotenv"));
-// usando o módulo de CORS
 const cors_1 = __importDefault(require("cors"));
 // preparar o servidor web de backend na porta 3000
-const app = (0, express_1.default)();
+const app = (0, express_1.default)(); //fremework
 const port = 3000;
 // preparar o servidor para dialogar no padrao JSON 
 app.use(express_1.default.json());
@@ -28,20 +28,25 @@ app.use((0, cors_1.default)());
 // todos os serviços.
 dotenv_1.default.config();
 // servicos de backend
+//======================================================== SESSÃO AERONAVES
+//-------------------------------------------------------- LISTAGEM DE AERONAVES-----------------------------------------------
 app.get("/listarAeronaves", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let cr = { status: "ERROR", message: "", payload: undefined, };
+    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+    let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
     try {
+        //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
         const connAttibs = {
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         };
-        const connection = yield oracledb_1.default.getConnection(connAttibs);
-        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.AERONAVES");
-        yield connection.close();
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
+        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.AERONAVES"); // EXECUÇÃO DO SELECT
+        yield connection.close(); //FECHAMENTO DA CONECÇÃO
         cr.status = "SUCCESS";
         cr.message = "Dados obtidos";
         cr.payload = resultadoConsulta.rows;
+        //RESPOSTA  SE OBTEVE RESPOSTA 200
     }
     catch (e) {
         if (e instanceof Error) {
@@ -56,38 +61,58 @@ app.get("/listarAeronaves", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
+//-------------------------------------------------------- INSERÇÃO DA AERONAVES-----------------------------------------------
 app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM INSERT NA TABELA AREONAVES
     // para inserir a aeronave temos que receber os dados na requisição. 
+    const Numero_de_identificação = req.body.Numero_de_identificacao;
     const modelo = req.body.modelo;
     const fabricante = req.body.fabricante;
     const qtdAssento = req.body.qtdAssento;
     const ano_de_fabricação = req.body.ano_de_fabricação;
-    // definindo um objeto de resposta.
+    console.log("modelo:", `${modelo}`);
+    //CONSTANTE QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONECÇÃO DO BANCO DE DADOS
     let cr = {
         status: "ERROR",
         message: "",
         payload: undefined,
     };
     let conn;
-    // conectando 
-    try {
+    try { // tentando estabelecer a conexão
         conn = yield oracledb_1.default.getConnection({
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         });
+        //nao pode duplicar o modelo
         const cmdInsertAero = "INSERT INTO SYS.AERONAVES(NUMERO_DE_IDENTIFICACAO, MODELO, FABRICANTE, ANO_DE_FABRICAÇÃO, QTDASSENTO)VALUES(SYS.SEQ_AERONAVES.NEXTVAL, :1, :2, :3, :4)";
-        const dados = [modelo, fabricante, ano_de_fabricação, qtdAssento];
-        let resInsert = yield conn.execute(cmdInsertAero, dados);
-        // importante: efetuar o commit para gravar no Oracle.
+        const dados = [modelo, fabricante, ano_de_fabricação, qtdAssento]; //GUARDANDO AS INFORMAÇÕES DIGITADAS
+        let resInsert = yield conn.execute(cmdInsertAero, dados); //EXECUTANDO AS  INFORMAÇÕES
+        // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
+        console.log("numero_de_identificação antes do d:", `${Numero_de_identificação}`);
+        yield conn.commit();
+        const chamadaProcedure = `
+    DECLARE
+    v_numero_de_identificacao NUMBER := 1;
+    v_qtd_assento NUMBER:=${qtdAssento};
+    BEGIN
+      SELECT MAX(Numero_de_identificacao) INTO v_numero_de_identificacao FROM SYS.aeronaves;
+
+      SYS.INSERIR_ASSENTOS(v_numero_de_identificacao, v_qtd_assento);
+    END;
+  `;
+        console.log("numero_de_identificação depois do d:", `${Numero_de_identificação}`);
+        yield conn.execute(chamadaProcedure);
+        // efetua o commit para gravar no Oracle.
         yield conn.commit();
         // obter a informação de quantas linhas foram inseridas. 
-        // neste caso precisa ser exatamente 1
         const rowsInserted = resInsert.rowsAffected;
-        if (rowsInserted !== undefined && rowsInserted === 1) {
+        if (rowsInserted !== undefined && rowsInserted === 1) { // neste caso precisa ser exatamente 1
             cr.status = "SUCCESS";
             cr.message = "Aeronave inserida.";
         }
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -106,8 +131,10 @@ app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
+//-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------
 app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // excluindo a aeronave pelo código dela:
+    //UTILIZANDO A REQUISIÇÃO DELETE PARA FAZER UM DELETE NA TABELA AREONAVES
+    // excluindo a aeronave atraves do id
     const Numero_de_identificacao = req.body.Numero_de_identificacao;
     // definindo um objeto de resposta.
     let cr = {
@@ -116,15 +143,15 @@ app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, f
         payload: undefined,
     };
     // conectando 
-    try {
+    try { // tentando estabelecer a conexão
         const connection = yield oracledb_1.default.getConnection({
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         });
         const cmdDeleteAero = `DELETE SYS.AERONAVES WHERE Numero_de_identificacao = :1`;
-        const dados = [Numero_de_identificacao];
-        let resDelete = yield connection.execute(cmdDeleteAero, dados);
+        const dados = [Numero_de_identificacao]; //GUARDANDO AS INFORMAÇÕES DIGITADAS
+        let resDelete = yield connection.execute(cmdDeleteAero, dados); // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
         // importante: efetuar o commit para gravar no Oracle.
         yield connection.commit();
         // obter a informação de quantas linhas foram inseridas. 
@@ -137,6 +164,8 @@ app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, f
         else {
             cr.message = "Aeronave não excluída. Verifique se o código informado está correto.";
         }
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -155,13 +184,16 @@ app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, f
 app.listen(port, () => {
     console.log("Servidor HTTP funcionando...");
 });
-//***********************************************ATUALIZAR*AERONAVE******************************************************** */
+//-----------------------------------------------------ATUALIZAR-AERONAVE---------------------------------------------------------
 app.put("/atualizarAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM UPDATE NA TABELA AREONAVES
+    //  receber os dados na requisição. 
     const modelo = req.body.modelo;
     const fabricante = req.body.fabricante;
     const qtdAssento = req.body.qtdAssento;
     const ano_de_fabricação = req.body.ano_de_fabricação;
     const Numero_de_identificacao = req.body.Numero_de_identificacao;
+    // objeto para custumizar  resposta
     let cr = {
         status: "ERROR",
         message: "",
@@ -176,13 +208,15 @@ app.put("/atualizarAeronave", (req, res) => __awaiter(void 0, void 0, void 0, fu
         });
         const cmdupdateAeronave = "UPDATE SYS.AERONAVES SET  MODELO = :1,FABRICANTE=:2,QTDASSENTO=:3,ANO_DE_FABRICAÇÃO=:4 WHERE Numero_de_identificacao=:5";
         const dados = [modelo, fabricante, qtdAssento, ano_de_fabricação, Numero_de_identificacao];
-        let resInsert = yield conn.execute(cmdupdateAeronave, dados);
-        yield conn.commit();
-        const rowsInserted = resInsert.rowsAffected;
+        let resInsert = yield conn.execute(cmdupdateAeronave, dados); //// método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
+        yield conn.commit(); // importante: efetuar o commit para gravar no Oracle.
+        const rowsInserted = resInsert.rowsAffected; // propriedade desse objeto que indica quantas linhas foram afetadas pela operação
         if (rowsInserted !== undefined && rowsInserted === 1) {
             cr.status = "SUCCESS";
             cr.message = "Aeronave Atualizado.";
         }
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -201,22 +235,25 @@ app.put("/atualizarAeronave", (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.send(cr);
     }
 }));
-//************************************************************************************************************* */
-//----------------------------------LISTAR-AEROPORTO--------------------------------------------------//
+//========================================================== SESSÃO AEROPORTO
+//---------------------------------------------------------- LISTAR-AEROPORTO -----------------------------------------------------------
 app.get("/listarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
     let cr = { status: "ERROR", message: "", payload: undefined, };
-    try {
+    try { //TENTANDO A conexão
         const connAttibs = {
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         };
-        const connection = yield oracledb_1.default.getConnection(connAttibs);
-        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.AEROPORTOS");
-        yield connection.close();
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
+        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.AEROPORTOS"); //EXECUNTANDO COMANDO DML
+        yield connection.close(); //ESPERANDO FECHAR
         cr.status = "SUCCESS";
         cr.message = "Dados obtidos";
         cr.payload = resultadoConsulta.rows;
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -231,8 +268,9 @@ app.get("/listarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
-//---------------------------------INSERIR AERONAVE-------------------------------------------------------------//
+//-------------------------------------------------- INSERIR AEROPORTO -------------------------------------------------------------//
 app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //REQUISIÇÃO TIPO PUT PARA REALIZAR INSERT
     // para inserir a aeronave temos que receber os dados na requisição. 
     const nome = req.body.nome;
     const nomeCidade = req.body.fk_nome_cidade;
@@ -262,6 +300,8 @@ app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, fun
             cr.status = "SUCCESS";
             cr.message = "Aeroporto inserido.";
         }
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -280,8 +320,10 @@ app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send(cr);
     }
 }));
+//---------------------------------------------------------------- EXLUIR AEROPORTO -----------------------------------------------
 app.delete("/excluirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // excluindo a aeronave pelo código dela:
+    // USANDO UMA REQUISIÇÃO ESTILO DELETE PARA EXCLUIR
+    //pegando dados da requisição
     const id_aeroporto = req.body.id_aeroporto;
     // definindo um objeto de resposta.
     let cr = {
@@ -298,19 +340,21 @@ app.delete("/excluirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, 
         });
         const cmdDeleteAeroP = `DELETE SYS.AEROPORTOS WHERE ID_AEROPORTO = :1`;
         const dados = [id_aeroporto];
-        let resDelete = yield connection.execute(cmdDeleteAeroP, dados);
+        let resDelete = yield connection.execute(cmdDeleteAeroP, dados); // método é usado para executar uma instrução SQL no banco de dados Oracle. connection é a variavel de conexão
         // importante: efetuar o commit para gravar no Oracle.
         yield connection.commit();
         // obter a informação de quantas linhas foram inseridas. 
         // neste caso precisa ser exatamente 1
         const rowsDeleted = resDelete.rowsAffected;
-        if (rowsDeleted !== undefined && rowsDeleted === 1) {
+        if (rowsDeleted !== undefined && rowsDeleted === 1) { // propriedade desse objeto que indica quantas linhas foram afetadas pela operação
             cr.status = "SUCCESS";
             cr.message = "Aeroporto excluído.";
         }
         else {
             cr.message = "Aeroporto não excluída. Verifique se o código informado está correto.";
         }
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
     }
     catch (e) {
         if (e instanceof Error) {
@@ -328,6 +372,7 @@ app.delete("/excluirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, 
 }));
 //-------------------------------------------------ATUALIZAE AEROPORTO--------------------------------------------------
 app.put("/atualizarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // USANDO UMA REQUISIÇÃO TIPO PUT PARA ALTERAR A TABELA
     const nome = req.body.nome;
     const id_aeroporto = req.body.id_aeroporto;
     let cr = {
@@ -369,6 +414,7 @@ app.put("/atualizarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, f
         res.send(cr);
     }
 }));
+//================================================== SESSÃO CIDADES
 //--------------------------------------------------LISTAR-CIDADE----------------------------------------------------------------------------------------------
 app.get("/listarCidades", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cr = { status: "ERROR", message: "", payload: undefined, };
@@ -398,7 +444,7 @@ app.get("/listarCidades", (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.send(cr);
     }
 }));
-//----------------------------------------------INSERIR-CIDADES-------------------------------------------------------------------------------------------
+//----------------------------------------------INSERIR-CIDADE-------------------------------------------------------------------------------------------
 app.put("/inserirCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // para inserir a  temos que receber os dados na requisição. 
     const nome = req.body.nome;
@@ -446,7 +492,7 @@ app.put("/inserirCidade", (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.send(cr);
     }
 }));
-//*********************************************************************************************************** */
+//------------------------------------------------------------------- EXCLUIR CIDADE ---------------------------------------------
 app.delete("/excluirCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // excluindo a aeronave pelo código dela:
     const id_cidade = req.body.id_cidade;
@@ -493,6 +539,7 @@ app.delete("/excluirCidade", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send(cr);
     }
 }));
+//------------------------------------------------------------------ UPDATE CIDADE --------------------------------------------------
 app.put("/atualizarCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const nome = req.body.nome;
     const id_cidade = req.body.id_cidade;
@@ -539,7 +586,8 @@ app.put("/atualizarCidade", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
-//---------------------------------------------LISTAR-VOO--------------------------------------------------
+//============================================================ SESSÃO VOO
+//------------------------------------------------------------ LISTAR-VOO -----------------------------------------------------------
 app.get("/listarVoo", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try {
@@ -568,7 +616,7 @@ app.get("/listarVoo", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.send(cr);
     }
 }));
-//---------------------------------------INSERIR-VOO-------------------------------------
+//---------------------------------------------------------INSERIR-VOO------------------------------------------------------------------
 app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // para inserir a vooS temos que receber os dados na requisição. 
     const idvoo = req.body.id_voo;
@@ -626,6 +674,15 @@ app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         res.send(cr);
     }
+    /*CustomResponse parece ser um tipo personalizado usado para formatar a resposta da API.
+  A conexão com o banco de dados é estabelecida usando as credenciais e a string de conexão fornecidas.
+  await oracledb.getConnection retorna uma conexão que é usada para executar a instrução SQL.
+  conn.execute é usado para executar a instrução SQL preparada (cmdInsertvoo) com os dados fornecidos.
+  await conn.commit() é usado para confirmar as alterações no banco de dados.
+  resInsert.rowsAffected é usado para obter o número de linhas afetadas pela instrução SQL.
+  O código usa try-catch para lidar com exceções. Se ocorrer uma exceção, a mensagem de erro é registrada na propriedade message do objeto de resposta (cr).
+  O bloco finally garante que a conexão seja fechada, independentemente de ocorrer uma exceção ou não.
+  A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/
 }));
 //--------------------------------------------------------LISTAR-TRECHO----------------------------------------------------------
 app.get("/listarTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {

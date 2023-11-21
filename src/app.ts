@@ -66,11 +66,12 @@ app.get("/listarAeronaves", async(req,res)=>{
 app.put("/inserirAeronave", async(req,res)=>{
     //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM INSERT NA TABELA AREONAVES
   // para inserir a aeronave temos que receber os dados na requisição. 
+  const Numero_de_identificação = req.body.Numero_de_identificacao as number;
   const modelo = req.body.modelo as string;
   const fabricante = req.body.fabricante as string;
   const qtdAssento = req.body.qtdAssento as number;
   const ano_de_fabricação = req.body.ano_de_fabricação as number; 
-
+console.log("modelo:",`${modelo}`)
   
 
   //CONSTANTE QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONECÇÃO DO BANCO DE DADOS
@@ -94,7 +95,21 @@ app.put("/inserirAeronave", async(req,res)=>{
     const dados = [modelo, fabricante, ano_de_fabricação,qtdAssento];//GUARDANDO AS INFORMAÇÕES DIGITADAS
     let resInsert = await conn.execute(cmdInsertAero, dados);//EXECUTANDO AS  INFORMAÇÕES
     // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
-    
+    console.log("numero_de_identificação antes do d:",`${Numero_de_identificação}`)
+    await conn.commit();
+    const chamadaProcedure = `
+    DECLARE
+    v_numero_de_identificacao NUMBER := 1;
+    v_qtd_assento NUMBER:=${qtdAssento};
+    BEGIN
+      SELECT MAX(Numero_de_identificacao) INTO v_numero_de_identificacao FROM SYS.aeronaves;
+
+      SYS.INSERIR_ASSENTOS(v_numero_de_identificacao, v_qtd_assento);
+    END;
+  `;
+  console.log("numero_de_identificação depois do d:",`${Numero_de_identificação}`)
+
+  await conn.execute(chamadaProcedure);
     // efetua o commit para gravar no Oracle.
     await conn.commit();
   
@@ -709,7 +724,17 @@ app.put("/inserirvoo", async(req,res)=>{
     }
     res.send(cr);  
   }
+  /*CustomResponse parece ser um tipo personalizado usado para formatar a resposta da API.
+A conexão com o banco de dados é estabelecida usando as credenciais e a string de conexão fornecidas.
+await oracledb.getConnection retorna uma conexão que é usada para executar a instrução SQL.
+conn.execute é usado para executar a instrução SQL preparada (cmdInsertvoo) com os dados fornecidos.
+await conn.commit() é usado para confirmar as alterações no banco de dados.
+resInsert.rowsAffected é usado para obter o número de linhas afetadas pela instrução SQL.
+O código usa try-catch para lidar com exceções. Se ocorrer uma exceção, a mensagem de erro é registrada na propriedade message do objeto de resposta (cr).
+O bloco finally garante que a conexão seja fechada, independentemente de ocorrer uma exceção ou não.
+A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/ 
 });
+
 //--------------------------------------------------------LISTAR-TRECHO----------------------------------------------------------
 app.get("/listarTrecho", async(req,res)=>{
 
