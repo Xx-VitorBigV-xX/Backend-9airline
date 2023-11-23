@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+//a Application Programming Interface (Interface de Programação de Aplicação) 'função distinta'
 // recursos/modulos necessarios.
 //Iportações 
 const express_1 = __importDefault(require("express"));
@@ -349,6 +350,42 @@ app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, fun
         if (conn !== undefined) {
             yield conn.close();
         }
+        res.send(cr);
+    }
+}));
+//--------------------------------------------------- BUSCA TODOS OS AEROPORTOS CONFORME A CIDADE ---------------------------------
+app.get("/BuscarAeroportosAtravesDeCidades", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    const cidade = req.query.nome;
+    let cr = { status: "ERROR", message: "", payload: undefined, };
+    try { //TENTANDO A conexão
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
+        let resultadoConsulta = ("SELECT AEROPORTOS.nome FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1"); //EXECUNTANDO COMANDO DML
+        const dados = [cidade];
+        console.log('dados dps do slect', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
+        yield connection.close(); //ESPERANDO FECHAR
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resConsulta.rows;
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
         res.send(cr);
     }
 }));

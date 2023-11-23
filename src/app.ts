@@ -1,4 +1,4 @@
-
+//a Application Programming Interface (Interface de Programação de Aplicação) 'função distinta'
 // recursos/modulos necessarios.
 //Iportações 
 import express from "express";
@@ -369,6 +369,42 @@ app.put("/inserirAeroporto", async(req,res)=>{
   }
 });
 
+//--------------------------------------------------- BUSCA TODOS OS AEROPORTOS CONFORME A CIDADE ---------------------------------
+app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
+  //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+  const cidade = req.query.nome as string;
+  let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
+    try{//TENTANDO A conexão
+      const connAttibs: ConnectionAttributes = {
+        user: process.env.ORACLE_DB_USER,
+        password: process.env.ORACLE_DB_PASSWORD,
+        connectionString: process.env.ORACLE_CONN_STR,
+      }
+      const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A RESPOTA OK
+      let resultadoConsulta = ("SELECT AEROPORTOS.nome FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1");//EXECUNTANDO COMANDO DML
+      const dados = [cidade];
+      console.log('dados dps do slect',dados)
+      let resConsulta = await  connection.execute(resultadoConsulta, dados);
+
+
+      await connection.close();//ESPERANDO FECHAR
+      cr.status = "SUCCESS"; 
+      cr.message = "Dados obtidos";
+      cr.payload = resConsulta.rows;
+  //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+  //pegando o erro
+    }catch(e){
+      if(e instanceof Error){
+        cr.message = e.message;
+        console.log(e.message);
+      }else{
+        cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+      }
+    } finally {
+      res.send(cr);  
+    }
+  
+  });
 //---------------------------------------------------------------- EXLUIR AEROPORTO -----------------------------------------------
 app.delete("/excluirAeroporto", async(req,res)=>{
   // USANDO UMA REQUISIÇÃO ESTILO DELETE PARA EXCLUIR
