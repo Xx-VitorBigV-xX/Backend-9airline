@@ -134,6 +134,8 @@ app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 //------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
 app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const Numero_de_identificacao = req.query.FK_numero_de_identificacao;
+    console.log('->>', Numero_de_identificacao);
     //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
     try {
@@ -143,12 +145,17 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         };
+        const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
+        console.log('conversão', numeroIdentificacao);
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
-        let resultadoConsulta = yield connection.execute("SELECT * FROM SYS.ASSENTOS"); // EXECUÇÃO DO SELECT
+        let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao from SYS.voos join ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1"); // EXECUÇÃO DO SELECT
+        let dados = [numeroIdentificacao];
+        console.log('->>', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
         yield connection.close(); //FECHAMENTO DA CONECÇÃO
         cr.status = "SUCCESS";
         cr.message = "Dados obtidos";
-        cr.payload = resultadoConsulta.rows;
+        cr.payload = resConsulta.rows;
         //RESPOSTA  SE OBTEVE RESPOSTA 200
     }
     catch (e) {
