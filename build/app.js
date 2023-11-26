@@ -685,6 +685,79 @@ app.get("/listarVoo", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.send(cr);
     }
 }));
+// ---------------------------------------------- BUSCAR DATA DO VOO de ida -------------------------------------------------------------
+app.get("/BuscarVooAtravezDaDataIda", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    const dia_partida = req.query.dia_partida;
+    console.log('dados antes do select', dia_partida);
+    let cr = { status: "ERROR", message: "", payload: undefined, };
+    try { //TENTANDO A conexão
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
+        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO DML
+        const dados = [dia_partida];
+        console.log('dados dps do slect', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
+        yield connection.close(); //ESPERANDO FECHAR
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resConsulta.rows;
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        res.send(cr);
+    }
+}));
+//-------------------------------------------------------BUSCA VOO ATRAVEZ DA DATA VOLTA-----------------------------------------
+app.get("/BuscarVooAtravezDaDataVolta", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    const dia_partida = req.query.dia_partida;
+    let cr = { status: "ERROR", message: "", payload: undefined, };
+    try { //TENTANDO A conexão
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
+        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO DML
+        const dados = [dia_partida];
+        console.log('dados dps do slect ->', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
+        yield connection.close(); //ESPERANDO FECHAR
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resConsulta.rows;
+        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
+        //pegando o erro
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        res.send(cr);
+    }
+}));
 //---------------------------------------------------------INSERIR-VOO------------------------------------------------------------------
 app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // para inserir a vooS temos que receber os dados na requisição. 
