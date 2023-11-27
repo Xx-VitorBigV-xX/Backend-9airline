@@ -135,6 +135,9 @@ app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, func
 //------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
 app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const Numero_de_identificacao = req.query.FK_numero_de_identificacao;
+    const trecho = req.query.FK_NOME_trecho;
+    const horario = req.query.horario_partida;
+    const dia = req.query.dia_partida;
     console.log('->>', Numero_de_identificacao);
     //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
@@ -148,8 +151,8 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
         console.log('conversão', numeroIdentificacao);
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
-        let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao from SYS.voos join ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1"); // EXECUÇÃO DO SELECT
-        let dados = [numeroIdentificacao];
+        let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4"); // EXECUÇÃO DO SELECT
+        let dados = [numeroIdentificacao, trecho, horario, dia];
         console.log('->>', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);
         yield connection.close(); //FECHAMENTO DA CONECÇÃO
@@ -157,6 +160,59 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         cr.message = "Dados obtidos";
         cr.payload = resConsulta.rows;
         //RESPOSTA  SE OBTEVE RESPOSTA 200
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        res.send(cr);
+    }
+}));
+//------------------------------------------------------------- UPDATE ASSENTO ---------------------------------------------------
+app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const Numero_de_identificacao = req.body.FK_numero_de_identificacao;
+    const trecho = req.body.FK_NOME_trecho;
+    const horario = req.body.horario_partida;
+    const dia = req.body.dia_partida;
+    const status = req.body.numero;
+    const statusdoAcento = req.body.status;
+    let cr = { status: "ERROR", message: "", payload: undefined };
+    console.log(`${statusdoAcento}`);
+    try {
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const connection = yield oracledb_1.default.getConnection(connAttibs);
+        let resultadoConsulta = `
+      UPDATE SYS.assentos
+      SET status = 'ocupado'
+      WHERE assentos.fk_aeronave IN (
+        SELECT voos.FK_numero_de_identificacao
+        FROM SYS.voos
+        WHERE voos.FK_numero_de_identificacao = :1
+          AND voos.FK_NOME_trecho = :2
+          AND voos.horario_partida = :3
+          AND voos.dia_partida = :4
+          AND assentos.numero = :5
+      )`;
+        let dados = [Numero_de_identificacao, trecho, horario, dia, status];
+        console.log('Query:', resultadoConsulta);
+        console.log('->>', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
+        // Se necessário, você pode commitar a transação
+        yield connection.commit();
+        yield connection.close();
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resConsulta.rows;
     }
     catch (e) {
         if (e instanceof Error) {
