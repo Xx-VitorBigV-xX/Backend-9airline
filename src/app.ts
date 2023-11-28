@@ -159,7 +159,7 @@ app.get("/listarAssentos", async(req,res)=>{
     const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
     console.log('conversão',numeroIdentificacao)
     const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
-    let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4");// EXECUÇÃO DO SELECT
+    let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao, ASSENTOS.status from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4");// EXECUÇÃO DO SELECT
     let dados = [numeroIdentificacao,trecho,horario,dia];
     console.log('->>',dados)
     let resConsulta = await  connection.execute(resultadoConsulta, dados);
@@ -193,7 +193,7 @@ app.put("/updateAssentos", async (req, res) => {
   const statusdoAcento = req.body.status as string;
 
   let cr: CustomResponse = { status: "ERROR", message: "", payload: undefined };
-  console.log(`${statusdoAcento}`)
+  console.log(`numero`,status)
   try {
     const connAttibs: ConnectionAttributes = {
       user: process.env.ORACLE_DB_USER,
@@ -237,6 +237,52 @@ app.put("/updateAssentos", async (req, res) => {
   } finally {
     res.send(cr);
   }
+});
+// ----------------------------------------------------- verificacao de status assentos -------------------------------------------
+
+app.get("/VerificaAssentos", async(req,res)=>{ 
+  const Numero_de_identificacao = req.query.FK_numero_de_identificacao as string;
+  const trecho = req.query.FK_NOME_trecho as string;
+  const horario = req.query.horario_partida as string;
+  const dia = req.query.dia_partida as string;
+  console.log('->>',Numero_de_identificacao)
+  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+  let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
+
+  try{
+    //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
+    const connAttibs: ConnectionAttributes = {
+      user: process.env.ORACLE_DB_USER,
+      password: process.env.ORACLE_DB_PASSWORD,
+      connectionString: process.env.ORACLE_CONN_STR,
+    }
+    const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
+    console.log('conversão',numeroIdentificacao)
+    const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
+    let resultadoConsulta = ("SELECT assentos.status, assentos.numero FROM SYS.voos JOIN SYS.assentos ON voos.fk_numero_de_identificacao = assentos.fk_aeronave WHERE voos.FK_numero_de_identificacao =:1 AND voos.FK_NOME_trecho =:2 AND voos.horario_partida =:3 AND voos.dia_partida =:4 ");// EXECUÇÃO DO SELECT
+    
+    let dados = [numeroIdentificacao,trecho,horario,dia];
+    console.log('->>',dados)
+    let resConsulta = await  connection.execute(resultadoConsulta, dados);
+
+
+
+    await connection.close();//FECHAMENTO DA CONECÇÃO
+    cr.status = "SUCCESS"; 
+    cr.message = "Dados obtidos";
+    cr.payload = resConsulta.rows;
+    //RESPOSTA  SE OBTEVE RESPOSTA 200
+  }catch(e){
+    if(e instanceof Error){
+      cr.message = e.message;
+      console.log(e.message);
+    }else{
+      cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+    }
+  } finally {
+    res.send(cr);  
+  }
+
 });
 
 //-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------

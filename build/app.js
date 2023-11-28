@@ -151,7 +151,7 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
         console.log('conversão', numeroIdentificacao);
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
-        let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4"); // EXECUÇÃO DO SELECT
+        let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao, ASSENTOS.status from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4"); // EXECUÇÃO DO SELECT
         let dados = [numeroIdentificacao, trecho, horario, dia];
         console.log('->>', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);
@@ -183,7 +183,7 @@ app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const status = req.body.numero;
     const statusdoAcento = req.body.status;
     let cr = { status: "ERROR", message: "", payload: undefined };
-    console.log(`${statusdoAcento}`);
+    console.log(`numero`, status);
     try {
         const connAttibs = {
             user: process.env.ORACLE_DB_USER,
@@ -213,6 +213,48 @@ app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         cr.status = "SUCCESS";
         cr.message = "Dados obtidos";
         cr.payload = resConsulta.rows;
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        res.send(cr);
+    }
+}));
+// ----------------------------------------------------- verificacao de status assentos -------------------------------------------
+app.get("/VerificaAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const Numero_de_identificacao = req.query.FK_numero_de_identificacao;
+    const trecho = req.query.FK_NOME_trecho;
+    const horario = req.query.horario_partida;
+    const dia = req.query.dia_partida;
+    console.log('->>', Numero_de_identificacao);
+    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+    let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
+    try {
+        //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
+        const connAttibs = {
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        };
+        const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
+        console.log('conversão', numeroIdentificacao);
+        const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
+        let resultadoConsulta = ("SELECT assentos.status, assentos.numero FROM SYS.voos JOIN SYS.assentos ON voos.fk_numero_de_identificacao = assentos.fk_aeronave WHERE voos.FK_numero_de_identificacao =:1 AND voos.FK_NOME_trecho =:2 AND voos.horario_partida =:3 AND voos.dia_partida =:4 "); // EXECUÇÃO DO SELECT
+        let dados = [numeroIdentificacao, trecho, horario, dia];
+        console.log('->>', dados);
+        let resConsulta = yield connection.execute(resultadoConsulta, dados);
+        yield connection.close(); //FECHAMENTO DA CONECÇÃO
+        cr.status = "SUCCESS";
+        cr.message = "Dados obtidos";
+        cr.payload = resConsulta.rows;
+        //RESPOSTA  SE OBTEVE RESPOSTA 200
     }
     catch (e) {
         if (e instanceof Error) {
