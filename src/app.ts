@@ -5,6 +5,7 @@ import express from "express";
 import oracledb, { Connection, ConnectionAttributes } from "oracledb";
 import dotenv from "dotenv";
 import cors from "cors";
+import { CONNREFUSED } from "dns";
 
 // preparar o servidor web de backend na porta 3000
 const app = express();//fremework
@@ -160,7 +161,7 @@ app.get("/listarAssentos", async(req,res)=>{
     let dados = [numeroIdentificacao];
     console.log('->>',dados)
     let resConsulta = await  connection.execute(resultadoConsulta);
-
+    
 
 
     await connection.close();//FECHAMENTO DA CONECÇÃO
@@ -1094,3 +1095,61 @@ app.put("/inserirTrecho", async(req,res)=>{
   }
 });
 
+
+
+//ticket -----------------------------------------------------------------------------
+app.put("/NovoTicket", async(req,res)=>{
+  const email = req.body.email as string;
+  const nome = req.body.nome as string;
+  const FK_id_voo = req.body.FK_id_voo as number;
+  const assento = req.body.assento as number
+
+  console.log('dados',email,nome,FK_id_voo,assento)
+  // definindo um objeto de resposta.
+  let cr: CustomResponse = {
+    status: "ERROR",
+    message: "",
+    payload: undefined,
+  };
+
+  let conn;
+
+  // conectando 
+  try{
+    conn = await oracledb.getConnection({
+       user: process.env.ORACLE_DB_USER,
+       password: process.env.ORACLE_DB_PASSWORD,
+       connectionString: process.env.ORACLE_CONN_STR,
+    });
+
+    const cmdInsertAerop = "INSERT INTO SYS.TICKETS(id_tikets ,email ,nome,FK_id_voo,assento)VALUES(SYS.SEQ_TICKET.NEXTVAL,:1,:2,:3,:4)"
+
+    const dados = [email,nome,FK_id_voo,assento];
+    let resInsert = await conn.execute(cmdInsertAerop, dados);
+    
+    // importante: efetuar o commit para gravar no Oracle.
+    await conn.commit();
+  
+    // obter a informação de quantas linhas foram inseridas. 
+    // neste caso precisa ser exatamente 1
+    const rowsInserted = resInsert.rowsAffected
+    if(rowsInserted !== undefined &&  rowsInserted === 1) {
+      cr.status = "SUCCESS"; 
+      cr.message = "novo ticket emitido.";
+    }
+
+  }catch(e){
+    if(e instanceof Error){
+      cr.message = e.message;
+      console.log(e.message);
+    }else{
+      cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+    }
+  } finally {
+    //fechar a conexao.
+    if(conn!== undefined){
+      await conn.close();
+    }
+    res.send(cr);  
+  }
+});
