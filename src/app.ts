@@ -141,10 +141,7 @@ console.log("modelo:",`${modelo}`)
 });
 //------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
 app.get("/listarAssentos", async(req,res)=>{ 
-  const Numero_de_identificacao = req.query.FK_numero_de_identificacao as string;
-  const trecho = req.query.FK_NOME_trecho as string;
-  const horario = req.query.horario_partida as string;
-  const dia = req.query.dia_partida as string;
+  const Numero_de_identificacao = req.query.id_voo as string;
   console.log('->>',Numero_de_identificacao)
   //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
@@ -159,10 +156,10 @@ app.get("/listarAssentos", async(req,res)=>{
     const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
     console.log('conversão',numeroIdentificacao)
     const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
-    let resultadoConsulta = ("select VOOS.FK_numero_de_identificacao, ASSENTOS.status from SYS.voos join SYS.ASSENTOS on voos.FK_numero_de_identificacao = assentos.fk_aeronave where assentos.fk_aeronave =:1 and voos.FK_NOME_trecho =:2 and voos.horario_partida =:3 and voos.dia_partida =:4");// EXECUÇÃO DO SELECT
-    let dados = [numeroIdentificacao,trecho,horario,dia];
+    let resultadoConsulta = (`select ASSENTOS_VOO_${numeroIdentificacao}.status from FIRSTAPP.ASSENTOS_VOO_${numeroIdentificacao}`);// EXECUÇÃO DO SELECT
+    let dados = [numeroIdentificacao];
     console.log('->>',dados)
-    let resConsulta = await  connection.execute(resultadoConsulta, dados);
+    let resConsulta = await  connection.execute(resultadoConsulta);
 
 
 
@@ -185,15 +182,12 @@ app.get("/listarAssentos", async(req,res)=>{
 });
 //------------------------------------------------------------- UPDATE ASSENTO ---------------------------------------------------
 app.put("/updateAssentos", async (req, res) => {
-  const Numero_de_identificacao = req.body.FK_numero_de_identificacao as number;
-  const trecho = req.body.FK_NOME_trecho as string;
-  const horario = req.body.horario_partida as string;
-  const dia = req.body.dia_partida as string;
-  const status = req.body.numero as number;
-  const statusdoAcento = req.body.status as string;
 
+  const numeroIdentificacao = req.body.id_voo as String;
+  const numero = req.body.numero as string
   let cr: CustomResponse = { status: "ERROR", message: "", payload: undefined };
-  console.log(`numero`,status)
+  console.log(`numeroid`,numeroIdentificacao)
+  console.log('numeroAss',numero)
   try {
     const connAttibs: ConnectionAttributes = {
       user: process.env.ORACLE_DB_USER,
@@ -203,29 +197,21 @@ app.put("/updateAssentos", async (req, res) => {
 
     const connection = await oracledb.getConnection(connAttibs);
     let resultadoConsulta = `
-      UPDATE SYS.assentos
+      UPDATE ASSENTOS_VOO_${numeroIdentificacao}
       SET status = 'ocupado'
-      WHERE assentos.fk_aeronave IN (
-        SELECT voos.FK_numero_de_identificacao
-        FROM SYS.voos
-        WHERE voos.FK_numero_de_identificacao = :1
-          AND voos.FK_NOME_trecho = :2
-          AND voos.horario_partida = :3
-          AND voos.dia_partida = :4
-          AND assentos.numero = :5
-      )`;
+        WHERE ASSENTOS_VOO_${numeroIdentificacao}.numero = :1
+      `;
     
-    let dados = [Numero_de_identificacao, trecho, horario, dia, status];
-    console.log('Query:', resultadoConsulta);
+    let dados = [numero];
     console.log('->>', dados);
     let resConsulta = await connection.execute(resultadoConsulta, dados);
     
     // Se necessário, você pode commitar a transação
+    
     await connection.commit();
-
     await connection.close();
     cr.status = "SUCCESS";
-    cr.message = "Dados obtidos";
+    cr.message = "Dados Atualizados";
     cr.payload = resConsulta.rows;
   } catch (e) {
     if (e instanceof Error) {
@@ -928,7 +914,7 @@ app.put("/inserirvoo", async(req,res)=>{
   const horarioChegada = req.body.horario_chegada as string;
   const horarioPartida = req.body.horario_partida as string;
   const valor = req.body.valor as number;
-  const modeloAeronave = req.body.FK_Modelo_aeronave as string;
+  const NumeroAeronave = req.body.FK_numero_de_identificacao as string;
   const NomeTrecho = req.body.FK_NOME_trecho as string;
   const NomeCidadeOrigem = req.body.FK_nome_cidade_origem as String;
   const NomeAeroportoOrigem = req.body.FK_nome_aeroporto_origem as string;
@@ -953,14 +939,30 @@ app.put("/inserirvoo", async(req,res)=>{
        connectionString: process.env.ORACLE_CONN_STR,
     });
 
-    const cmdInsertvoo = "INSERT INTO SYS.VOOS(id_voo,dia_partida, dia_chegada,horario_partida,horario_chegada,valor,FK_Modelo_aeronave,FK_NOME_trecho,FK_nome_cidade_origem,FK_nome_aeroporto_origem,FK_nome_cidade_destino,FK_nome_aeroporto_destino)values(SYS.seq_voo.nextval,:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11)";
+    const cmdInsertvoo = "INSERT INTO SYS.VOOS(id_voo,dia_partida, dia_chegada,horario_partida,horario_chegada,valor,FK_numero_de_identificacao,FK_NOME_trecho,FK_nome_cidade_origem,FK_nome_aeroporto_origem,FK_nome_cidade_destino,FK_nome_aeroporto_destino)values(SYS.seq_voo.nextval,:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11)";
 
-    const dados = [diaPartida,diaChegada,horarioChegada,horarioPartida,valor,modeloAeronave,NomeTrecho, NomeCidadeOrigem,NomeAeroportoOrigem,NomeCiodadeDestino,NomeAeroportoDestino];
+    const dados = [diaPartida,diaChegada,horarioChegada,horarioPartida,valor,NumeroAeronave,NomeTrecho, NomeCidadeOrigem,NomeAeroportoOrigem,NomeCiodadeDestino,NomeAeroportoDestino];
     let resInsert = await conn.execute(cmdInsertvoo, dados);
     
     // importante: efetuar o commit para gravar no Oracle.
     await conn.commit();
-  
+    const criaAssentosDoVoo = `DECLARE
+    nome_tabela VARCHAR2(50);
+    seq_numero NUMBER;
+ BEGIN
+    -- Gera um número único usando uma sequência
+    SELECT SYS.seq_voo.currval INTO seq_numero FROM DUAL;
+ 
+    -- Cria uma tabela temporária
+    EXECUTE IMMEDIATE 'CREATE TABLE Assentos_voo_' || seq_numero || ' AS
+                       SELECT codigo, numero, status, fk_aeronave
+                       FROM SYS.assentos
+                       WHERE fk_aeronave = ${NumeroAeronave}';
+ 
+ END;`;
+ await conn.execute(criaAssentosDoVoo);
+ // efetua o commit para gravar no Oracle.
+ await conn.commit();
     // obter a informação de quantas linhas foram inseridas. 
     // neste caso precisa ser exatamente 1
     const rowsInserted = resInsert.rowsAffected
