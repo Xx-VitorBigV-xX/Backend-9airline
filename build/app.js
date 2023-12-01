@@ -1024,7 +1024,7 @@ app.put("/NovoTicket", (req, res) => __awaiter(void 0, void 0, void 0, function*
     const nome = req.body.nome;
     const FK_id_voo = req.body.FK_id_voo;
     const assento = req.body.assento;
-    console.log('dados', email, nome, FK_id_voo, assento);
+    console.log(`dados ${email}`);
     // definindo um objeto de resposta.
     let cr = {
         status: "ERROR",

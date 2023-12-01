@@ -1104,7 +1104,7 @@ app.put("/NovoTicket", async(req,res)=>{
   const FK_id_voo = req.body.FK_id_voo as number;
   const assento = req.body.assento as number
 
-  console.log('dados',email,nome,FK_id_voo,assento)
+  console.log(`dados ${email}`)
   // definindo um objeto de resposta.
   let cr: CustomResponse = {
     status: "ERROR",
