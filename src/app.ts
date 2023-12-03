@@ -73,7 +73,8 @@ app.put("/inserirAeronave", async(req,res)=>{
   const modelo = req.body.modelo as string;
   const fabricante = req.body.fabricante as string;
   const qtdAssento = req.body.qtdAssento as number;
-  const ano_de_fabricação = req.body.ano_de_fabricação as number; 
+  const ano_de_fabricação = req.body.ano_de_fabricação as number;
+  const registro = req.body.Resgistro as number;
 console.log("modelo:",`${modelo}`)
   
 
@@ -94,7 +95,7 @@ console.log("modelo:",`${modelo}`)
        connectionString: process.env.ORACLE_CONN_STR,
     });
                                                                          //nao pode duplicar o modelo
-    const cmdInsertAero = "INSERT INTO SYS.AERONAVES(NUMERO_DE_IDENTIFICACAO, MODELO, FABRICANTE, ANO_DE_FABRICAÇÃO, QTDASSENTO)VALUES(SYS.SEQ_AERONAVES.NEXTVAL, :1, :2, :3, :4)"
+    const cmdInsertAero = "INSERT INTO SYS.AERONAVES(NUMERO_DE_IDENTIFICACAO, MODELO, FABRICANTE, ANO_DE_FABRICAÇÃO, QTDASSENTO, Resgistro)VALUES(SYS.SEQ_AERONAVES.NEXTVAL, :1, :2, :3, :4,SYS.SEQ_REGISTRO_AERONAVE.NEXTVAL)"
     const dados = [modelo, fabricante, ano_de_fabricação,qtdAssento];//GUARDANDO AS INFORMAÇÕES DIGITADAS
     let resInsert = await conn.execute(cmdInsertAero, dados);//EXECUTANDO AS  INFORMAÇÕES
     // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
@@ -294,7 +295,10 @@ app.delete("/excluirAeronave", async(req,res)=>{
        connectionString: process.env.ORACLE_CONN_STR,
     });
 
-    const cmdDeleteAero = `DELETE SYS.AERONAVES WHERE Numero_de_identificacao = :1`
+    const cmdDeleteAero = ` BEGIN
+    DELETE FROM SYS.assentos WHERE FK_AERONAVE = :1;
+    DELETE FROM SYS.AERONAVES WHERE Numero_de_identificacao = :1;
+END;`
     const dados = [Numero_de_identificacao];//GUARDANDO AS INFORMAÇÕES DIGITADAS
     let resDelete = await connection.execute(cmdDeleteAero, dados); // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
     // importante: efetuar o commit para gravar no Oracle.
@@ -303,7 +307,7 @@ app.delete("/excluirAeronave", async(req,res)=>{
     // obter a informação de quantas linhas foram inseridas. 
     // neste caso precisa ser exatamente 1
     const rowsDeleted = resDelete.rowsAffected
-    if(rowsDeleted !== undefined &&  rowsDeleted === 1) {
+    if(rowsDeleted !== undefined ) {
       cr.status = "SUCCESS"; 
       cr.message = "Aeronave excluída.";
     }else{
