@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// ==============================================  PREPARAÇÃO ================================================================================================
 //a Application Programming Interface (Interface de Programação de Aplicação) 'função distinta'
 // recursos/modulos necessarios.
 //Iportações 
@@ -28,9 +29,31 @@ app.use((0, cors_1.default)());
 // já configurando e preparando o uso do dotenv para 
 // todos os serviços.
 dotenv_1.default.config();
-// servicos de backend
-//======================================================== SESSÃO AERONAVES
-//-------------------------------------------------------- LISTAGEM DE AERONAVES-----------------------------------------------
+/* Este código Backend esta dividido em 6 sessões serviços. Cada sessão é especifica de cada tabela no oracle sql,
+
+1-sessão-Aeronaves
+2-sessão-Aeroportos
+3-sesão-Cidades
+4-sessão-Voos
+5-sessão-Trechos
+6-sessão-tickets
+
+Cada uma delas contem seus serviços,aqui esta os serviços disponiveis(todas as sesões tem pelo menos a inserir)
+
+-Listar
+-Inserir
+-Buscar
+-Deletar
+-Update
+
+para  procurar  uma sessão especifica:  (NUMERO_DA_SESSÃO)-SESSÃO-(NOME-DA-SESSÃO)
+EX: 3-SESSÃO-CIDADES
+para  procurar uma uma serviço especifico: (nome_do_serviços)-SESSÃO
+LISTAR-AEROPORTO
+
+*/
+// ==============================================  1-SESSÃO-AERONAVES ================================================================================================
+// ------------------------------------------------------------------------------------------------ LISTAR-AERONAVE
 app.get("/listarAeronaves", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
@@ -62,82 +85,13 @@ app.get("/listarAeronaves", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
-//-------------------------------------------------------- INSERÇÃO DA AERONAVES-----------------------------------------------
-app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM INSERT NA TABELA AREONAVES
-    // para inserir a aeronave temos que receber os dados na requisição. 
-    const Numero_de_identificação = req.body.Numero_de_identificacao;
-    const modelo = req.body.modelo;
-    const fabricante = req.body.fabricante;
-    const qtdAssento = req.body.qtdAssento;
-    const ano_de_fabricação = req.body.ano_de_fabricação;
-    const registro = req.body.Resgistro;
-    console.log("modelo:", `${modelo}`);
-    //CONSTANTE QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONECÇÃO DO BANCO DE DADOS
-    let cr = {
-        status: "ERROR",
-        message: "",
-        payload: undefined,
-    };
-    let conn;
-    try { // tentando estabelecer a conexão
-        conn = yield oracledb_1.default.getConnection({
-            user: process.env.ORACLE_DB_USER,
-            password: process.env.ORACLE_DB_PASSWORD,
-            connectionString: process.env.ORACLE_CONN_STR,
-        });
-        //nao pode duplicar o modelo
-        const cmdInsertAero = "INSERT INTO SYS.AERONAVES(NUMERO_DE_IDENTIFICACAO, MODELO, FABRICANTE, ANO_DE_FABRICAÇÃO, QTDASSENTO, Resgistro)VALUES(SYS.SEQ_AERONAVES.NEXTVAL, :1, :2, :3, :4,SYS.SEQ_REGISTRO_AERONAVE.NEXTVAL)";
-        const dados = [modelo, fabricante, ano_de_fabricação, qtdAssento]; //GUARDANDO AS INFORMAÇÕES DIGITADAS
-        let resInsert = yield conn.execute(cmdInsertAero, dados); //EXECUTANDO AS  INFORMAÇÕES
-        // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
-        console.log("numero_de_identificação antes do d:", `${Numero_de_identificação}`);
-        yield conn.commit();
-        const chamadaProcedure = `
-    DECLARE
-    v_numero_de_identificacao NUMBER := 1;
-    v_qtd_assento NUMBER:=${qtdAssento};
-    BEGIN
-      SELECT MAX(Numero_de_identificacao) INTO v_numero_de_identificacao FROM SYS.aeronaves;
-
-      SYS.INSERIR_ASSENTOS(v_numero_de_identificacao, v_qtd_assento);
-    END;
-  `;
-        console.log("numero_de_identificação depois do d:", `${Numero_de_identificação}`);
-        yield conn.execute(chamadaProcedure);
-        // efetua o commit para gravar no Oracle.
-        yield conn.commit();
-        // obter a informação de quantas linhas foram inseridas. 
-        const rowsInserted = resInsert.rowsAffected;
-        if (rowsInserted !== undefined && rowsInserted === 1) { // neste caso precisa ser exatamente 1
-            cr.status = "SUCCESS";
-            cr.message = "Aeronave inserida.";
-        }
-        //try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
-        //pegando o erro
-    }
-    catch (e) {
-        if (e instanceof Error) {
-            cr.message = e.message;
-            console.log(e.message);
-        }
-        else {
-            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
-        }
-    }
-    finally {
-        //fechar a conexao.
-        if (conn !== undefined) {
-            yield conn.close();
-        }
-        res.send(cr);
-    }
-}));
-//------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
+// ------------------------------------------------------------------------------------------------ LISTAR-ASSENTO-AERONAVE-DO-VOO
 app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //ESTE CODIGO ELE DA UM SELECT EM UMA TABELA QUE É UMA COPIA DA STORED PRODUCED DO ASSENTO DAS AERONAVES, ELAS SÃO FEITAS AUTOMATICAMENTE, FOI FEITO UM BACKUP PARA NAO INTERFERIR
+    //O STATUS DA AERONAVE, E APENAS O STATUS,DELETE DO ASSENTO DO VOO 
     const Numero_de_identificacao = req.query.id_voo;
     console.log('->>', Numero_de_identificacao);
-    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA ASSENTOS DO VOO
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
     try {
         //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
@@ -146,18 +100,17 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         };
-        const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
+        const numeroIdentificacao = parseInt(Numero_de_identificacao, 10); //CONVERTENDO STRING PARA NUUMERO  POIS O QUERY NAO ACEITA NUMBER 
         console.log('conversão', numeroIdentificacao);
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
         let resultadoConsulta = (`select ASSENTOS_VOO_${numeroIdentificacao}.status from FIRSTAPP.ASSENTOS_VOO_${numeroIdentificacao}`); // EXECUÇÃO DO SELECT
         let dados = [numeroIdentificacao];
         console.log('->>', dados);
-        let resConsulta = yield connection.execute(resultadoConsulta);
+        let resConsulta = yield connection.execute(resultadoConsulta); //ESPERANDO EXECUTAR 
         yield connection.close(); //FECHAMENTO DA CONECÇÃO
         cr.status = "SUCCESS";
         cr.message = "Dados obtidos";
         cr.payload = resConsulta.rows;
-        //RESPOSTA  SE OBTEVE RESPOSTA 200
     }
     catch (e) {
         if (e instanceof Error) {
@@ -172,7 +125,7 @@ app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.send(cr);
     }
 }));
-//------------------------------------------------------------- UPDATE ASSENTO ---------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-STATUS-AERONAVE-DO-VOO 
 app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const numeroIdentificacao = req.body.id_voo;
     const numero = req.body.numero;
@@ -191,10 +144,10 @@ app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
       SET status = 'ocupado'
         WHERE ASSENTOS_VOO_${numeroIdentificacao}.numero = :1
       `;
+        //TROCANDO STATUS NA TABELA 'BACKUP' ASSENTO DO VOO
         let dados = [numero];
         console.log('->>', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);
-        // Se necessário, você pode commitar a transação
         yield connection.commit();
         yield connection.close();
         cr.status = "SUCCESS";
@@ -214,14 +167,14 @@ app.put("/updateAssentos", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.send(cr);
     }
 }));
-// ----------------------------------------------------- verificacao de status assentos -------------------------------------------
+// ------------------------------------------------------------------------------------------------- verificacao de status assentos  !!!!!!!!!!!!!!!!!!!!!!!!!!!
 app.get("/VerificaAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const Numero_de_identificacao = req.query.FK_numero_de_identificacao;
     const trecho = req.query.FK_NOME_trecho;
     const horario = req.query.horario_partida;
     const dia = req.query.dia_partida;
     console.log('->>', Numero_de_identificacao);
-    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+    //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA ASSENTO_VOO
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
     try {
         //OBJETO QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONEXÃO DO BANCO DE DADOS
@@ -256,7 +209,7 @@ app.get("/VerificaAssentos", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send(cr);
     }
 }));
-//-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------
+// ------------------------------------------------------------------------------------------------- DELETAR-AERONAVE 
 app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //UTILIZANDO A REQUISIÇÃO DELETE PARA FAZER UM DELETE NA TABELA AREONAVES
     // excluindo a aeronave atraves do id
@@ -278,12 +231,12 @@ app.delete("/excluirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, f
     DELETE FROM SYS.assentos WHERE FK_AERONAVE = :1;
     DELETE FROM SYS.AERONAVES WHERE Numero_de_identificacao = :1;
 END;`;
+        // BEGIN E AND POIS, QUER-SE FAZER DOIS COMANDOS AO MESMO TEMPO  A EXECUÇÃO SÓ ACEITA UMA STRING DE COMANDO, O BEGIN É UMA STRING DE COMANDO, APESAR DELE FAZER UMA SEQUENCIA DE COMANDO ELE É CONSIDERADO UMA STRING UNICA DE COMANDO 
         const dados = [Numero_de_identificacao]; //GUARDANDO AS INFORMAÇÕES DIGITADAS
         let resDelete = yield connection.execute(cmdDeleteAero, dados); // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
         // importante: efetuar o commit para gravar no Oracle.
         yield connection.commit();
-        // obter a informação de quantas linhas foram inseridas. 
-        // neste caso precisa ser exatamente 1
+        // obter a informação de  linhas  inseridas. 
         const rowsDeleted = resDelete.rowsAffected;
         if (rowsDeleted !== undefined) {
             cr.status = "SUCCESS";
@@ -312,7 +265,7 @@ END;`;
 app.listen(port, () => {
     console.log("Servidor HTTP funcionando...");
 });
-//-----------------------------------------------------ATUALIZAR-AERONAVE---------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-AERONAVE
 app.put("/atualizarAeronave", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM UPDATE NA TABELA AREONAVES
     //  receber os dados na requisição. 
@@ -363,8 +316,8 @@ app.put("/atualizarAeronave", (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.send(cr);
     }
 }));
-//========================================================== SESSÃO AEROPORTO
-//---------------------------------------------------------- LISTAR-AEROPORTO -----------------------------------------------------------
+// ==============================================  2-SESSÃO-AEROPORTOS ================================================================================================
+// ------------------------------------------------------------------------------------------------- LISTAR-AEROPORTO 
 app.get("/listarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
     let cr = { status: "ERROR", message: "", payload: undefined, };
@@ -396,7 +349,7 @@ app.get("/listarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
-//-------------------------------------------------- INSERIR AEROPORTO -------------------------------------------------------------//
+// ------------------------------------------------------------------------------------------------- INSERIR-AEROPORTO 
 app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //REQUISIÇÃO TIPO PUT PARA REALIZAR INSERT
     // para inserir a aeronave temos que receber os dados na requisição. 
@@ -448,9 +401,9 @@ app.put("/inserirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send(cr);
     }
 }));
-//--------------------------------------------------- BUSCA TODOS OS AEROPORTOS CONFORME A CIDADE ---------------------------------
+// ------------------------------------------------------------------------------------------------- BUSCA-TODOS-OS-AEROPORTOS-CONFORME-A-CIDADE 
 app.get("/BuscarAeroportosAtravesDeCidades", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    //BUSACAR AEROPORTO DE ACORDO COM A CIADADE, O RETORNO SERÁ APENAS AEROPORTOSD QUE ESTAO ASSOCIADOS COM A CIDADE
     const cidade = req.query.nome;
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try { //TENTANDO A conexão
@@ -484,9 +437,9 @@ app.get("/BuscarAeroportosAtravesDeCidades", (req, res) => __awaiter(void 0, voi
         res.send(cr);
     }
 }));
-//---------------------------------------------------------------- EXLUIR AEROPORTO -----------------------------------------------
+// ------------------------------------------------------------------------------------------------- DELETAR-AEROPORTO 
 app.delete("/excluirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // USANDO UMA REQUISIÇÃO ESTILO DELETE PARA EXCLUIR
+    // USANDO UMA REQUISIÇÃO  DELETE PARA EXCLUIR
     //pegando dados da requisição
     const id_aeroporto = req.body.id_aeroporto;
     // definindo um objeto de resposta.
@@ -534,7 +487,7 @@ app.delete("/excluirAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, 
         res.send(cr);
     }
 }));
-//-------------------------------------------------ATUALIZAE AEROPORTO--------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-AEROPORTO
 app.put("/atualizarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // USANDO UMA REQUISIÇÃO TIPO PUT PARA ALTERAR A TABELA
     const nome = req.body.nome;
@@ -578,8 +531,8 @@ app.put("/atualizarAeroporto", (req, res) => __awaiter(void 0, void 0, void 0, f
         res.send(cr);
     }
 }));
-//================================================== SESSÃO CIDADES
-//--------------------------------------------------LISTAR-CIDADE----------------------------------------------------------------------------------------------
+// ==============================================  3-SESSÃO-CIDADES ================================================================================================
+// ------------------------------------------------------------------------------------------------- LISTAR-CIDADE
 app.get("/listarCidades", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try {
@@ -608,7 +561,7 @@ app.get("/listarCidades", (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.send(cr);
     }
 }));
-//----------------------------------------------INSERIR-CIDADE-------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- INSERIR-CIDADE
 app.put("/inserirCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // para inserir a  temos que receber os dados na requisição. 
     const nome = req.body.nome;
@@ -656,10 +609,11 @@ app.put("/inserirCidade", (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.send(cr);
     }
 }));
-//------------------------------------------------------------------- EXCLUIR CIDADE ---------------------------------------------
+// ------------------------------------------------------------------------------------------------- DELETAR-CIDADE 
 app.delete("/excluirCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // excluindo a aeronave pelo código dela:
+    // excluindo a CIDADE pelo código  id  dela:
     const id_cidade = req.body.id_cidade;
+    console.log(`${id_cidade}`);
     // definindo um objeto de resposta.
     let cr = {
         status: "ERROR",
@@ -703,7 +657,7 @@ app.delete("/excluirCidade", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send(cr);
     }
 }));
-//------------------------------------------------------------------ UPDATE CIDADE --------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-CIDADE 
 app.put("/atualizarCidade", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const nome = req.body.nome;
     const id_cidade = req.body.id_cidade;
@@ -750,9 +704,10 @@ app.put("/atualizarCidade", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.send(cr);
     }
 }));
-//============================================================ SESSÃO VOO
-//------------------------------------------------------------ LISTAR-VOO -----------------------------------------------------------
+// ==============================================  4-SESSÃO-VOOS ================================================================================================
+// ------------------------------------------------------------------------------------------------- LISTAR-VOO 
 app.get("/listarVoo", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //faz uma busca de toda a tabela voos no oracle sql
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try {
         const connAttibs = {
@@ -780,9 +735,9 @@ app.get("/listarVoo", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.send(cr);
     }
 }));
-// ---------------------------------------------- BUSCAR DATA DO VOO de ida -------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- BUSCAR-DATA-VOO-DE-IDA
 app.get("/BuscarVooAtravezDaDataIda", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    //busca especificamente atráves da data
     const dia_partida = req.query.dia_partida;
     console.log('dados antes do select', dia_partida);
     let cr = { status: "ERROR", message: "", payload: undefined, };
@@ -793,7 +748,7 @@ app.get("/BuscarVooAtravezDaDataIda", (req, res) => __awaiter(void 0, void 0, vo
             connectionString: process.env.ORACLE_CONN_STR,
         };
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
-        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO DML
+        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO 
         const dados = [dia_partida];
         console.log('dados dps do slect', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);
@@ -817,9 +772,9 @@ app.get("/BuscarVooAtravezDaDataIda", (req, res) => __awaiter(void 0, void 0, vo
         res.send(cr);
     }
 }));
-//-------------------------------------------------------BUSCA VOO ATRAVEZ DA DATA VOLTA-----------------------------------------
+// ------------------------------------------------------------------------------------------------- BUSCA VOO ATRAVEZ DA DATA VOLTA
 app.get("/BuscarVooAtravezDaDataVolta", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+    //busca especificamente atráves da data
     const dia_partida = req.query.dia_partida;
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try { //TENTANDO A conexão
@@ -829,7 +784,7 @@ app.get("/BuscarVooAtravezDaDataVolta", (req, res) => __awaiter(void 0, void 0, 
             connectionString: process.env.ORACLE_CONN_STR,
         };
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
-        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO DML
+        let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1"); //EXECUNTANDO COMANDO
         const dados = [dia_partida];
         console.log('dados dps do slect ->', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);
@@ -853,7 +808,7 @@ app.get("/BuscarVooAtravezDaDataVolta", (req, res) => __awaiter(void 0, void 0, 
         res.send(cr);
     }
 }));
-//---------------------------------------------------------INSERIR-VOO------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- INSERIR-VOO 
 app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // para inserir a vooS temos que receber os dados na requisição. 
     const idvoo = req.body.id_voo;
@@ -901,6 +856,8 @@ app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function*
                        WHERE fk_aeronave = ${NumeroAeronave}';
  
  END;`;
+        //existe duas strings de comando, o 'cmdinsertvoo'  -> o primeiro insere uma nova linha na tabela voo 
+        // a segunda é um begin que tem uma declaração que vai criar uma tabela backup de assentos de acordo com as informações especificadas
         yield conn.execute(criaAssentosDoVoo);
         // efetua o commit para gravar no Oracle.
         yield conn.commit();
@@ -938,7 +895,7 @@ app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function*
   O bloco finally garante que a conexão seja fechada, independentemente de ocorrer uma exceção ou não.
   A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/
 }));
-//--------------------------------------------------------LISTAR-TRECHO----------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- LISTAR-TRECHO
 app.get("/listarTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try {
@@ -967,7 +924,8 @@ app.get("/listarTrecho", (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.send(cr);
     }
 }));
-//--------------------------------------------------------INSERIR-TRECHO----------------------------------------------------------
+// ==============================================  5-SESSÃO-TRECHOS ================================================================================================
+// ------------------------------------------------------------------------------------------------- INSERIR-TRECHO
 app.put("/inserirTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const nome = req.body.nome;
     const idcidadeOrigem = req.body.FK_id_cidade_origem;
@@ -1022,6 +980,7 @@ app.put("/inserirTrecho", (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.send(cr);
     }
 }));
+// ==============================================  6-SESSÃO-TICKETS ================================================================================================
 //ticket -----------------------------------------------------------------------------
 app.put("/NovoTicket", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const email = req.body.email;
