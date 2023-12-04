@@ -90,9 +90,11 @@ app.get("/listarAeronaves", async(req,res)=>{
 });
 // ------------------------------------------------------------------------------------------------ LISTAR-ASSENTO-AERONAVE-DO-VOO
 app.get("/listarAssentos", async(req,res)=>{ 
+  //ESTE CODIGO ELE DA UM SELECT EM UMA TABELA QUE É UMA COPIA DA STORED PRODUCED DO ASSENTO DAS AERONAVES, ELAS SÃO FEITAS AUTOMATICAMENTE, FOI FEITO UM BACKUP PARA NAO INTERFERIR
+  //O STATUS DA AERONAVE, E APENAS O STATUS,DELETE DO ASSENTO DO VOO 
   const Numero_de_identificacao = req.query.id_voo as string;
   console.log('->>',Numero_de_identificacao)
-  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA ASSENTOS DO VOO
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
 
   try{
@@ -102,13 +104,13 @@ app.get("/listarAssentos", async(req,res)=>{
       password: process.env.ORACLE_DB_PASSWORD,
       connectionString: process.env.ORACLE_CONN_STR,
     }
-    const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);
+    const numeroIdentificacao = parseInt(Numero_de_identificacao, 10);//CONVERTENDO STRING PARA NUUMERO  POIS O QUERY NAO ACEITA NUMBER 
     console.log('conversão',numeroIdentificacao)
     const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A CONEÇÃO PORQUE A REQUISIÇÃO É ASSÍNCRONA
     let resultadoConsulta = (`select ASSENTOS_VOO_${numeroIdentificacao}.status from FIRSTAPP.ASSENTOS_VOO_${numeroIdentificacao}`);// EXECUÇÃO DO SELECT
     let dados = [numeroIdentificacao];
     console.log('->>',dados)
-    let resConsulta = await  connection.execute(resultadoConsulta);
+    let resConsulta = await  connection.execute(resultadoConsulta);//ESPERANDO EXECUTAR 
     
 
 
@@ -116,7 +118,6 @@ app.get("/listarAssentos", async(req,res)=>{
     cr.status = "SUCCESS"; 
     cr.message = "Dados obtidos";
     cr.payload = resConsulta.rows;
-    //RESPOSTA  SE OBTEVE RESPOSTA 200
   }catch(e){
     if(e instanceof Error){
       cr.message = e.message;
@@ -150,12 +151,11 @@ app.put("/updateAssentos", async (req, res) => {
       SET status = 'ocupado'
         WHERE ASSENTOS_VOO_${numeroIdentificacao}.numero = :1
       `;
-    
+    //TROCANDO STATUS NA TABELA 'BACKUP' ASSENTO DO VOO
     let dados = [numero];
     console.log('->>', dados);
     let resConsulta = await connection.execute(resultadoConsulta, dados);
     
-    // Se necessário, você pode commitar a transação
     
     await connection.commit();
     await connection.close();
@@ -180,7 +180,7 @@ app.get("/VerificaAssentos", async(req,res)=>{
   const horario = req.query.horario_partida as string;
   const dia = req.query.dia_partida as string;
   console.log('->>',Numero_de_identificacao)
-  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
+  //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA ASSENTO_VOO
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
 
   try{
@@ -243,13 +243,13 @@ app.delete("/excluirAeronave", async(req,res)=>{
     DELETE FROM SYS.assentos WHERE FK_AERONAVE = :1;
     DELETE FROM SYS.AERONAVES WHERE Numero_de_identificacao = :1;
 END;`
+// BEGIN E AND POIS, QUER-SE FAZER DOIS COMANDOS AO MESMO TEMPO  A EXECUÇÃO SÓ ACEITA UMA STRING DE COMANDO, O BEGIN É UMA STRING DE COMANDO, APESAR DELE FAZER UMA SEQUENCIA DE COMANDO ELE É CONSIDERADO UMA STRING UNICA DE COMANDO 
     const dados = [Numero_de_identificacao];//GUARDANDO AS INFORMAÇÕES DIGITADAS
     let resDelete = await connection.execute(cmdDeleteAero, dados); // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
     // importante: efetuar o commit para gravar no Oracle.
     await connection.commit();
   
-    // obter a informação de quantas linhas foram inseridas. 
-    // neste caso precisa ser exatamente 1
+    // obter a informação de  linhas  inseridas. 
     const rowsDeleted = resDelete.rowsAffected
     if(rowsDeleted !== undefined ) {
       cr.status = "SUCCESS"; 
@@ -323,8 +323,6 @@ app.put("/atualizarAeronave",async(req,res)=>{
 }
 
 });
-
-
 // ==============================================  2-SESSÃO-AEROPORTOS ================================================================================================
 
 
@@ -418,7 +416,7 @@ app.put("/inserirAeroporto", async(req,res)=>{
 });
 // ------------------------------------------------------------------------------------------------- BUSCA-TODOS-OS-AEROPORTOS-CONFORME-A-CIDADE 
 app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
-  //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+  //BUSACAR AEROPORTO DE ACORDO COM A CIADADE, O RETORNO SERÁ APENAS AEROPORTOSD QUE ESTAO ASSOCIADOS COM A CIDADE
   const cidade = req.query.nome as string;
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
     try{//TENTANDO A conexão
@@ -454,7 +452,7 @@ app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
   });
 // ------------------------------------------------------------------------------------------------- DELETAR-AEROPORTO 
 app.delete("/excluirAeroporto", async(req,res)=>{
-  // USANDO UMA REQUISIÇÃO ESTILO DELETE PARA EXCLUIR
+  // USANDO UMA REQUISIÇÃO  DELETE PARA EXCLUIR
   //pegando dados da requisição
   const  id_aeroporto = req.body.id_aeroporto as number;
  
@@ -640,7 +638,7 @@ app.put("/inserirCidade", async(req,res)=>{
 });
 // ------------------------------------------------------------------------------------------------- DELETAR-CIDADE 
 app.delete("/excluirCidade", async(req,res)=>{
-  // excluindo a aeronave pelo código dela:
+  // excluindo a CIDADE pelo código  id  dela:
   const  id_cidade = req.body.id_cidade as number;
   console.log(`${id_cidade}`)
   // definindo um objeto de resposta.
@@ -748,9 +746,7 @@ app.put("/atualizarCidade",async(req,res)=>{
 
 // ------------------------------------------------------------------------------------------------- LISTAR-VOO 
 app.get("/listarVoo", async(req,res)=>{
-
-
-
+//faz uma busca de toda a tabela voos no oracle sql
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
 
   try{
@@ -781,7 +777,7 @@ app.get("/listarVoo", async(req,res)=>{
 });
 // ------------------------------------------------------------------------------------------------- BUSCAR-DATA-VOO-DE-IDA
 app.get("/BuscarVooAtravezDaDataIda", async(req,res)=>{
-  //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+  //busca especificamente atráves da data
   const dia_partida = req.query.dia_partida as string;
   console.log('dados antes do select',dia_partida)
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
@@ -792,7 +788,7 @@ app.get("/BuscarVooAtravezDaDataIda", async(req,res)=>{
         connectionString: process.env.ORACLE_CONN_STR,
       }
       const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A RESPOTA OK
-      let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1");//EXECUNTANDO COMANDO DML
+      let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1");//EXECUNTANDO COMANDO 
       const dados = [dia_partida];
       console.log('dados dps do slect',dados)
       let resConsulta = await  connection.execute(resultadoConsulta, dados);
@@ -818,7 +814,8 @@ app.get("/BuscarVooAtravezDaDataIda", async(req,res)=>{
   });
   // ------------------------------------------------------------------------------------------------- BUSCA VOO ATRAVEZ DA DATA VOLTA
 app.get("/BuscarVooAtravezDaDataVolta", async(req,res)=>{
-  //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
+  //busca especificamente atráves da data
+
   const dia_partida = req.query.dia_partida as string;
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
     try{//TENTANDO A conexão
@@ -828,7 +825,7 @@ app.get("/BuscarVooAtravezDaDataVolta", async(req,res)=>{
         connectionString: process.env.ORACLE_CONN_STR,
       }
       const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A RESPOTA OK
-      let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1");//EXECUNTANDO COMANDO DML
+      let resultadoConsulta = ("SELECT * FROM SYS.VOOS  WHERE VOOS.dia_partida = :1");//EXECUNTANDO COMANDO
       const dados = [dia_partida];
       console.log('dados dps do slect ->',dados)
       let resConsulta = await  connection.execute(resultadoConsulta, dados);
@@ -908,7 +905,10 @@ app.put("/inserirvoo", async(req,res)=>{
                        FROM SYS.assentos
                        WHERE fk_aeronave = ${NumeroAeronave}';
  
- END;`;
+ END;`; 
+
+ //existe duas strings de comando, o 'cmdinsertvoo'  -> o primeiro insere uma nova linha na tabela voo 
+ // a segunda é um begin que tem uma declaração que vai criar uma tabela backup de assentos de acordo com as informações especificadas
  await conn.execute(criaAssentosDoVoo);
  // efetua o commit para gravar no Oracle.
  await conn.commit();
