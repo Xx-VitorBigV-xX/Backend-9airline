@@ -1,3 +1,5 @@
+// ==============================================  PREPARAÇÃO ================================================================================================
+
 //a Application Programming Interface (Interface de Programação de Aplicação) 'função distinta'
 // recursos/modulos necessarios.
 //Iportações 
@@ -28,9 +30,12 @@ type CustomResponse = {
 
 
 
-// servicos de backend
-//======================================================== SESSÃO AERONAVES
-//-------------------------------------------------------- LISTAGEM DE AERONAVES-----------------------------------------------
+
+
+// ==============================================  SESSÃO-AERONAVES ================================================================================================
+
+
+// ------------------------------------------------------------------------------------------------ LISTAR-AERONAVE
 app.get("/listarAeronaves", async(req,res)=>{ 
   //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};//VARIAVEL PARA RECEBER O CR
@@ -62,86 +67,7 @@ app.get("/listarAeronaves", async(req,res)=>{
   }
 
 });
-
-
-//-------------------------------------------------------- INSERÇÃO DA AERONAVES-----------------------------------------------
-
-app.put("/inserirAeronave", async(req,res)=>{
-    //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM INSERT NA TABELA AREONAVES
-  // para inserir a aeronave temos que receber os dados na requisição. 
-  const Numero_de_identificação = req.body.Numero_de_identificacao as number;
-  const modelo = req.body.modelo as string;
-  const fabricante = req.body.fabricante as string;
-  const qtdAssento = req.body.qtdAssento as number;
-  const ano_de_fabricação = req.body.ano_de_fabricação as number;
-  const registro = req.body.Resgistro as number;
-console.log("modelo:",`${modelo}`)
-  
-
-  //CONSTANTE QUE GUARDA TODAS AS INFORMAÇÕES DO USUARIO, SENHA E STRING DE CONECÇÃO DO BANCO DE DADOS
-  let cr: CustomResponse = {
-    status: "ERROR",
-    message: "",
-    payload: undefined,
-  };
-
-  let conn;
-
-
-  try{// tentando estabelecer a conexão
-    conn = await oracledb.getConnection({
-       user: process.env.ORACLE_DB_USER,
-       password: process.env.ORACLE_DB_PASSWORD,
-       connectionString: process.env.ORACLE_CONN_STR,
-    });
-                                                                         //nao pode duplicar o modelo
-    const cmdInsertAero = "INSERT INTO SYS.AERONAVES(NUMERO_DE_IDENTIFICACAO, MODELO, FABRICANTE, ANO_DE_FABRICAÇÃO, QTDASSENTO, Resgistro)VALUES(SYS.SEQ_AERONAVES.NEXTVAL, :1, :2, :3, :4,SYS.SEQ_REGISTRO_AERONAVE.NEXTVAL)"
-    const dados = [modelo, fabricante, ano_de_fabricação,qtdAssento];//GUARDANDO AS INFORMAÇÕES DIGITADAS
-    let resInsert = await conn.execute(cmdInsertAero, dados);//EXECUTANDO AS  INFORMAÇÕES
-    // método é usado para executar uma instrução SQL no banco de dados Oracle. conn é a variavel de conexão
-    console.log("numero_de_identificação antes do d:",`${Numero_de_identificação}`)
-    await conn.commit();
-    const chamadaProcedure = `
-    DECLARE
-    v_numero_de_identificacao NUMBER := 1;
-    v_qtd_assento NUMBER:=${qtdAssento};
-    BEGIN
-      SELECT MAX(Numero_de_identificacao) INTO v_numero_de_identificacao FROM SYS.aeronaves;
-
-      SYS.INSERIR_ASSENTOS(v_numero_de_identificacao, v_qtd_assento);
-    END;
-  `;
-  console.log("numero_de_identificação depois do d:",`${Numero_de_identificação}`)
-
-  await conn.execute(chamadaProcedure);
-    // efetua o commit para gravar no Oracle.
-    await conn.commit();
-  
-    // obter a informação de quantas linhas foram inseridas. 
-   
-    const rowsInserted = resInsert.rowsAffected
-    if(rowsInserted !== undefined &&  rowsInserted === 1) { // neste caso precisa ser exatamente 1
-      cr.status = "SUCCESS"; 
-      cr.message = "Aeronave inserida.";
-    }
-//try-catch é uma construção em várias linguagens de programação que permite que você escreva código que pode gerar exceções (erros) e fornece um mecanismo para lidar com essas exceções.
-//pegando o erro
-  }catch(e){
-    if(e instanceof Error){
-      cr.message = e.message;
-      console.log(e.message);
-    }else{
-      cr.message = "Erro ao conectar ao oracle. Sem detalhes";
-    }
-  } finally {
-    //fechar a conexao.
-    if(conn!== undefined){
-      await conn.close();
-    }
-    res.send(cr);  
-  }
-});
-//------------------------------------------------------------- LISTAR ASSENTO ---------------------------------------------------
+// ------------------------------------------------------------------------------------------------ LISTAR-ASSENTO-AERONAVE-DO-VOO
 app.get("/listarAssentos", async(req,res)=>{ 
   const Numero_de_identificacao = req.query.id_voo as string;
   console.log('->>',Numero_de_identificacao)
@@ -182,7 +108,7 @@ app.get("/listarAssentos", async(req,res)=>{
   }
 
 });
-//------------------------------------------------------------- UPDATE ASSENTO ---------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-STATUS-AERONAVE-DO-VOO 
 app.put("/updateAssentos", async (req, res) => {
 
   const numeroIdentificacao = req.body.id_voo as String;
@@ -226,8 +152,7 @@ app.put("/updateAssentos", async (req, res) => {
     res.send(cr);
   }
 });
-// ----------------------------------------------------- verificacao de status assentos -------------------------------------------
-
+// ------------------------------------------------------------------------------------------------- verificacao de status assentos  !!!!!!!!!!!!!!!!!!!!!!!!!!!
 app.get("/VerificaAssentos", async(req,res)=>{ 
   const Numero_de_identificacao = req.query.FK_numero_de_identificacao as string;
   const trecho = req.query.FK_NOME_trecho as string;
@@ -272,9 +197,7 @@ app.get("/VerificaAssentos", async(req,res)=>{
   }
 
 });
-
-//-------------------------------------------------------- EXCLUIR A AERONAVES ---------------------------------------------------
-
+// ------------------------------------------------------------------------------------------------- DELETAR-AERONAVE 
 app.delete("/excluirAeronave", async(req,res)=>{
     //UTILIZANDO A REQUISIÇÃO DELETE PARA FAZER UM DELETE NA TABELA AREONAVES
   // excluindo a aeronave atraves do id
@@ -327,13 +250,10 @@ END;`
     res.send(cr);  
   }
 });
-
 app.listen(port,()=>{
   console.log("Servidor HTTP funcionando...");
 });
-
-//-----------------------------------------------------ATUALIZAR-AERONAVE---------------------------------------------------------
-
+// ------------------------------------------------------------------------------------------------- UPDATE-AERONAVE
 app.put("/atualizarAeronave",async(req,res)=>{
   //UTILIZANDO A REQUISIÇÃO PUT PARA FAZER UM UPDATE NA TABELA AREONAVES
   //  receber os dados na requisição. 
@@ -382,9 +302,12 @@ app.put("/atualizarAeronave",async(req,res)=>{
 }
 
 });
-//========================================================== SESSÃO AEROPORTO
-//---------------------------------------------------------- LISTAR-AEROPORTO -----------------------------------------------------------
 
+
+// ==============================================  SESSÃO-AEROPORTOS ================================================================================================
+
+
+// ------------------------------------------------------------------------------------------------- LISTAR-AEROPORTO 
 app.get("/listarAeroporto", async(req,res)=>{
 //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
@@ -416,9 +339,7 @@ app.get("/listarAeroporto", async(req,res)=>{
   }
 
 });
-
-
-//-------------------------------------------------- INSERIR AEROPORTO -------------------------------------------------------------//
+// ------------------------------------------------------------------------------------------------- INSERIR-AEROPORTO 
 app.put("/inserirAeroporto", async(req,res)=>{
   //REQUISIÇÃO TIPO PUT PARA REALIZAR INSERT
   // para inserir a aeronave temos que receber os dados na requisição. 
@@ -474,8 +395,7 @@ app.put("/inserirAeroporto", async(req,res)=>{
     res.send(cr);  
   }
 });
-
-//--------------------------------------------------- BUSCA TODOS OS AEROPORTOS CONFORME A CIDADE ---------------------------------
+// ------------------------------------------------------------------------------------------------- BUSCA-TODOS-OS-AEROPORTOS-CONFORME-A-CIDADE 
 app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
   //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
   const cidade = req.query.nome as string;
@@ -511,7 +431,7 @@ app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
     }
   
   });
-//---------------------------------------------------------------- EXLUIR AEROPORTO -----------------------------------------------
+// ------------------------------------------------------------------------------------------------- DELETAR-AEROPORTO 
 app.delete("/excluirAeroporto", async(req,res)=>{
   // USANDO UMA REQUISIÇÃO ESTILO DELETE PARA EXCLUIR
   //pegando dados da requisição
@@ -562,7 +482,7 @@ app.delete("/excluirAeroporto", async(req,res)=>{
     res.send(cr);  
   }
 });
-//-------------------------------------------------ATUALIZAE AEROPORTO--------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-AEROPORTO
 app.put("/atualizarAeroporto",async(req,res)=>{
   // USANDO UMA REQUISIÇÃO TIPO PUT PARA ALTERAR A TABELA
   const nome = req.body.nome as String;
@@ -606,8 +526,12 @@ app.put("/atualizarAeroporto",async(req,res)=>{
 }
 
 });
-//================================================== SESSÃO CIDADES
-//--------------------------------------------------LISTAR-CIDADE----------------------------------------------------------------------------------------------
+
+
+// ==============================================  SESSÃO-CIDADES ================================================================================================
+
+
+// ------------------------------------------------------------------------------------------------- LISTAR-CIDADE
 app.get("/listarCidades", async(req,res)=>{
 
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
@@ -638,9 +562,7 @@ app.get("/listarCidades", async(req,res)=>{
   }
 
 });
-
-
-//----------------------------------------------INSERIR-CIDADE-------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- INSERIR-CIDADE
 app.put("/inserirCidade", async(req,res)=>{
   
   // para inserir a  temos que receber os dados na requisição. 
@@ -695,7 +617,7 @@ app.put("/inserirCidade", async(req,res)=>{
     res.send(cr);  
   }
 });
-//------------------------------------------------------------------- EXCLUIR CIDADE ---------------------------------------------
+// ------------------------------------------------------------------------------------------------- DELETAR-CIDADE 
 app.delete("/excluirCidade", async(req,res)=>{
   // excluindo a aeronave pelo código dela:
   const  id_cidade = req.body.id_cidade as number;
@@ -745,7 +667,7 @@ app.delete("/excluirCidade", async(req,res)=>{
     res.send(cr);  
   }
 });
-//------------------------------------------------------------------ UPDATE CIDADE --------------------------------------------------
+// ------------------------------------------------------------------------------------------------- UPDATE-CIDADE 
 app.put("/atualizarCidade",async(req,res)=>{
   const nome = req.body.nome as string;
   const id_cidade = req.body.id_cidade as number;
@@ -798,8 +720,12 @@ app.put("/atualizarCidade",async(req,res)=>{
     res.send(cr);  
   }
 });
-//============================================================ SESSÃO VOO
-//------------------------------------------------------------ LISTAR-VOO -----------------------------------------------------------
+
+
+// ==============================================  SESSÃO-VOOS ================================================================================================
+
+
+// ------------------------------------------------------------------------------------------------- LISTAR-VOO 
 app.get("/listarVoo", async(req,res)=>{
 
 
@@ -832,9 +758,7 @@ app.get("/listarVoo", async(req,res)=>{
   }
 
 });
-
-// ---------------------------------------------- BUSCAR DATA DO VOO de ida -------------------------------------------------------------
-
+// ------------------------------------------------------------------------------------------------- BUSCAR-DATA-VOO-DE-IDA
 app.get("/BuscarVooAtravezDaDataIda", async(req,res)=>{
   //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
   const dia_partida = req.query.dia_partida as string;
@@ -871,8 +795,7 @@ app.get("/BuscarVooAtravezDaDataIda", async(req,res)=>{
     }
   
   });
-  //-------------------------------------------------------BUSCA VOO ATRAVEZ DA DATA VOLTA-----------------------------------------
-  
+  // ------------------------------------------------------------------------------------------------- BUSCA VOO ATRAVEZ DA DATA VOLTA
 app.get("/BuscarVooAtravezDaDataVolta", async(req,res)=>{
   //USANDO GET NA REQUISIÇÃO PARA FAZER UM SELECT NA TABELA AEROPORTOS NO BANCO DE DADOS VIA CONEXÃO PELO const connAttibs: ConnectionAttributes
   const dia_partida = req.query.dia_partida as string;
@@ -908,7 +831,7 @@ app.get("/BuscarVooAtravezDaDataVolta", async(req,res)=>{
     }
   
   });
-//---------------------------------------------------------INSERIR-VOO------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- INSERIR-VOO 
 app.put("/inserirvoo", async(req,res)=>{
   
   // para inserir a vooS temos que receber os dados na requisição. 
@@ -1000,8 +923,7 @@ O código usa try-catch para lidar com exceções. Se ocorrer uma exceção, a m
 O bloco finally garante que a conexão seja fechada, independentemente de ocorrer uma exceção ou não.
 A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/ 
 });
-
-//--------------------------------------------------------LISTAR-TRECHO----------------------------------------------------------
+// ------------------------------------------------------------------------------------------------- LISTAR-TRECHO
 app.get("/listarTrecho", async(req,res)=>{
 
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
@@ -1033,9 +955,11 @@ app.get("/listarTrecho", async(req,res)=>{
 
 });
 
-//--------------------------------------------------------INSERIR-TRECHO----------------------------------------------------------
+
+// ==============================================  SESSÃO-TRECHOS ================================================================================================
 
 
+// ------------------------------------------------------------------------------------------------- INSERIR-TRECHO
 app.put("/inserirTrecho", async(req,res)=>{
   
   const nome = req.body.nome as string;
@@ -1099,6 +1023,8 @@ app.put("/inserirTrecho", async(req,res)=>{
   }
 });
 
+
+// ==============================================  SESSÃO-TICKETS ================================================================================================
 
 
 //ticket -----------------------------------------------------------------------------
