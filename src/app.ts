@@ -699,7 +699,7 @@ app.put("/inserirCidade", async(req,res)=>{
 app.delete("/excluirCidade", async(req,res)=>{
   // excluindo a aeronave pelo código dela:
   const  id_cidade = req.body.id_cidade as number;
- 
+  console.log(`${id_cidade}`)
   // definindo um objeto de resposta.
   let cr: CustomResponse = {
     status: "ERROR",
@@ -715,7 +715,7 @@ app.delete("/excluirCidade", async(req,res)=>{
        connectionString: process.env.ORACLE_CONN_STR,
     });
 
-    const cmdDeletecity = `DELETE SYS.CIDADE WHERE ID_CIDADE = :1`
+    const cmdDeletecity = `DELETE SYS.CIDADEs WHERE ID_CIDADE = :1`
     const dados = [id_cidade];
 
     let resDelete = await connection.execute(cmdDeletecity, dados);

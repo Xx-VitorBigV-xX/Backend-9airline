@@ -673,7 +673,7 @@ app.delete("/excluirCidade", (req, res) => __awaiter(void 0, void 0, void 0, fun
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         });
-        const cmdDeletecity = `DELETE SYS.CIDADE WHERE ID_CIDADE = :1`;
+        const cmdDeletecity = `DELETE SYS.CIDADEs WHERE ID_CIDADE = :1`;
         const dados = [id_cidade];
         let resDelete = yield connection.execute(cmdDeletecity, dados);
         // importante: efetuar o commit para gravar no Oracle.
