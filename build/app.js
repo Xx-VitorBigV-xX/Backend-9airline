@@ -413,7 +413,7 @@ app.get("/BuscarAeroportosAtravesDeCidades", (req, res) => __awaiter(void 0, voi
             connectionString: process.env.ORACLE_CONN_STR,
         };
         const connection = yield oracledb_1.default.getConnection(connAttibs); //ESPERANDO A RESPOTA OK
-        let resultadoConsulta = ("SELECT AEROPORTOS.nome FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1"); //EXECUNTANDO COMANDO DML
+        let resultadoConsulta = ("SELECT AEROPORTOS.nome, AEROPORTOS.id_aeroporto FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1"); //EXECUNTANDO COMANDO DML
         const dados = [cidade];
         console.log('dados dps do slect', dados);
         let resConsulta = yield connection.execute(resultadoConsulta, dados);

@@ -426,7 +426,7 @@ app.get("/BuscarAeroportosAtravesDeCidades", async(req,res)=>{
         connectionString: process.env.ORACLE_CONN_STR,
       }
       const connection = await oracledb.getConnection(connAttibs);//ESPERANDO A RESPOTA OK
-      let resultadoConsulta = ("SELECT AEROPORTOS.nome FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1");//EXECUNTANDO COMANDO DML
+      let resultadoConsulta = ("SELECT AEROPORTOS.nome, AEROPORTOS.id_aeroporto FROM SYS.AEROPORTOS JOIN SYS.CIDADES ON AEROPORTOS.fk_nome_cidade = CIDADES.nome WHERE CIDADES.nome = :1");//EXECUNTANDO COMANDO DML
       const dados = [cidade];
       console.log('dados dps do slect',dados)
       let resConsulta = await  connection.execute(resultadoConsulta, dados);
