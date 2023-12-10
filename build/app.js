@@ -896,6 +896,7 @@ app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function*
   A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/
 }));
 // ------------------------------------------------------------------------------------------------- LISTAR-TRECHO
+// ==============================================  5-SESSÃO-TRECHOS ================================================================================================
 app.get("/listarTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cr = { status: "ERROR", message: "", payload: undefined, };
     try {
@@ -924,7 +925,6 @@ app.get("/listarTrecho", (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.send(cr);
     }
 }));
-// ==============================================  5-SESSÃO-TRECHOS ================================================================================================
 // ------------------------------------------------------------------------------------------------- INSERIR-TRECHO
 app.put("/inserirTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const nome = req.body.nome;
@@ -977,6 +977,47 @@ app.put("/inserirTrecho", (req, res) => __awaiter(void 0, void 0, void 0, functi
         if (conn !== undefined) {
             yield conn.close();
         }
+        res.send(cr);
+    }
+}));
+app.delete("/deleteTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const idTrecho = req.body.id_trecho;
+    console.log(`recebendo ${idTrecho}`);
+    let cr = {
+        status: "ERROR",
+        message: "",
+        payload: undefined,
+    };
+    try {
+        const connection = yield oracledb_1.default.getConnection({
+            user: process.env.ORACLE_DB_USER,
+            password: process.env.ORACLE_DB_PASSWORD,
+            connectionString: process.env.ORACLE_CONN_STR,
+        });
+        const cmdDeleteTrecho = 'DELETE SYS.TRECHOS WHERE ID_TRECHO = :1';
+        const dados = [idTrecho];
+        let resDelete = yield connection.execute(cmdDeleteTrecho, dados);
+        yield connection.commit();
+        const rowsDeleted = resDelete.rowsAffected;
+        if (rowsDeleted !== undefined && rowsDeleted === 1) {
+            cr.status = "SUCCESS";
+            cr.message = "Trecho excluído.";
+        }
+        else {
+            cr.message = "Trecho não excluído. Verifique se o código informado está correto.";
+        }
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            cr.message = e.message;
+            console.log(e.message);
+        }
+        else {
+            cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+        }
+    }
+    finally {
+        // devolvendo a resposta da requisição.
         res.send(cr);
     }
 }));

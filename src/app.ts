@@ -362,7 +362,7 @@ app.get("/listarAeroporto", async(req,res)=>{
 app.put("/inserirAeroporto", async(req,res)=>{
   //REQUISIÇÃO TIPO PUT PARA REALIZAR INSERT
   // para inserir a aeronave temos que receber os dados na requisição. 
-  const nome = req.body.nome as string;
+  const nome = req.body.nome as string;// body associado ao sql
   const nomeCidade = req.body.fk_nome_cidade as string;
 
   // definindo um objeto de resposta.
@@ -945,6 +945,11 @@ O bloco finally garante que a conexão seja fechada, independentemente de ocorre
 A resposta da API é enviada como JSON, contendo informações sobre o status da operação.*/ 
 });
 // ------------------------------------------------------------------------------------------------- LISTAR-TRECHO
+
+
+
+// ==============================================  5-SESSÃO-TRECHOS ================================================================================================
+
 app.get("/listarTrecho", async(req,res)=>{
 
   let cr: CustomResponse = {status: "ERROR", message: "", payload: undefined,};
@@ -975,11 +980,6 @@ app.get("/listarTrecho", async(req,res)=>{
   }
 
 });
-
-
-// ==============================================  5-SESSÃO-TRECHOS ================================================================================================
-
-
 // ------------------------------------------------------------------------------------------------- INSERIR-TRECHO
 app.put("/inserirTrecho", async(req,res)=>{
   
@@ -1044,10 +1044,49 @@ app.put("/inserirTrecho", async(req,res)=>{
   }
 });
 
+ app.delete("/deleteTrecho",async(req,res)=>{
+  const idTrecho = req.body.id_trecho as number;
+  
+  console.log(`recebendo ${idTrecho}`)
+  let cr: CustomResponse = {
+    status: "ERROR",
+    message: "",
+    payload: undefined,
+  };
+  try{
+    const connection = await oracledb.getConnection({
+       user: process.env.ORACLE_DB_USER,
+       password: process.env.ORACLE_DB_PASSWORD,
+       connectionString: process.env.ORACLE_CONN_STR,
+    });
+    const cmdDeleteTrecho = 'DELETE SYS.TRECHOS WHERE ID_TRECHO = :1'
+    const dados = [idTrecho];
+    let resDelete = await connection.execute(cmdDeleteTrecho,dados);
+    await connection.commit();
+    const rowsDeleted = resDelete.rowsAffected
+    if(rowsDeleted !== undefined &&  rowsDeleted === 1) {
+      cr.status = "SUCCESS"; 
+      cr.message = "Trecho excluído.";
+    }else{
+      cr.message = "Trecho não excluído. Verifique se o código informado está correto.";
+    }
+
+  }catch(e){
+    if(e instanceof Error){
+      cr.message = e.message;
+      console.log(e.message);
+    }else{
+      cr.message = "Erro ao conectar ao oracle. Sem detalhes";
+    }
+  } finally {
+    // devolvendo a resposta da requisição.
+    res.send(cr);  
+  }
+
+
+ })
 
 // ==============================================  6-SESSÃO-TICKETS ================================================================================================
-
-
 //ticket -----------------------------------------------------------------------------
 app.put("/NovoTicket", async(req,res)=>{
   const email = req.body.email as string;
