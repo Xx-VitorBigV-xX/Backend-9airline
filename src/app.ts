@@ -114,7 +114,7 @@ app.put("/inserirAeronave", async(req,res)=>{
        connectionString: process.env.ORACLE_CONN_STR,
     });
 
-    const cmdInsereAeronave = "INSERT INTO SYS.AERONAVES (Numero_de_identificacao,Resgistro,Modelo,Fabricante,ano_de_fabricação,qtdAssento)VALUES(SEQ.AERONAVES.NEXTVALUE,SEQ_REGISTRO_AERONAVE.NEXTVALUE,:1,:2,:3,:4)"
+    const cmdInsereAeronave = "INSERT INTO SYS.AERONAVES (Numero_de_identificacao,Resgistro,Modelo,Fabricante,ano_de_fabricação,qtdAssento)VALUES(SYS.SEQ_AERONAVES.NEXTVAL,SYS.SEQ_REGISTRO_AERONAVE.NEXTVAL,:1,:2,:3,:4)"
 
     const dados = [modelo,fabricante,qtdAssento,ano_de_fabricação];
     let resInsert = await conn.execute(cmdInsereAeronave, dados);
