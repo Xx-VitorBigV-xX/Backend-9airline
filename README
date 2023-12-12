@@ -13,29 +13,38 @@
 
 
 
+-- (Made by Vitor Hugo Amaro) 
 
 --SEQUENCIAS--
 --SEQUENCIAS--
 --SEQUENCIAS--
 
+
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA ID AERONAVE
 CREATE SEQUENCE SEQ_AERONAVES 
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA AEROPORTO
 CREATE SEQUENCE SEQ_AEROPORTOS
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA DO REGISTRO DA AERONAVE
 CREATE SEQUENCE SEQ_REGISTRO_AERONAVE  
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA DO ID CIADADE
 CREATE SEQUENCE SEQ_CIDADES
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA ID VOO
 CREATE SEQUENCE SEQ_VOO
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA ID TICKETS
 CREATE SEQUENCE SEQ_TICKET
 START WITH 1 INCREMENT BY 1;
+-- (Made by Vitor Hugo Amaro)
 -- SEQUENCIA DO ID TRECHO
 CREATE SEQUENCE SEQ_TRECHO
 START WITH 1 INCREMENT BY 1;
@@ -44,6 +53,7 @@ START WITH 1 INCREMENT BY 1;
 -- TABELAS--
 -- TABELAS--
 
+-- (Made by Vitor Hugo Amaro)
 -- tabela aeronave
 CREATE TABLE AERONAVES(
     Numero_de_identificacao INT PRIMARY KEY,
@@ -53,6 +63,7 @@ CREATE TABLE AERONAVES(
     ano_de_fabricação DATE NOT NULL,
     qtdAssento INT NOT NULL
 ); 
+-- (Made by Vitor Hugo Amaro)
 -- tabela aeroporto
 CREATE TABLE AEROPORTOS(
     id_aeroporto INT PRIMARY KEY,
@@ -62,12 +73,13 @@ CREATE TABLE AEROPORTOS(
             FOREIGN KEY(FK_NOME_CIDADE)
             REFERENCES CIDADES(NOME)
 ); 
+-- (Made by Vitor Hugo Amaro)
 -- tabela cidades
 CREATE TABLE CIDADES(
     id_cidade INT PRIMARY KEY,
     nome VARCHAR2(44) UNIQUE
 ); 
-
+-- (Made by Vitor Hugo Amaro)
 -- tabela trechos
 CREATE TABLE TRECHOS(
     id_trecho INT PRIMARY KEY,
@@ -112,6 +124,7 @@ CREATE TABLE TRECHOS(
         REFERENCES AEROPORTOS(NOME)
         
 );
+-- (Made by Vitor Hugo Amaro)
 -- tabela assentos
 create table assentos(
 	codigo integer primary key,
@@ -122,7 +135,7 @@ create table assentos(
         FOREIGN KEY (fK_AERONAVE)
         REFERENCES AERONAVES(Numero_de_identificacao)
 );
-
+-- (Made by Vitor Hugo Amaro)
 -- tabela voos
 CREATE TABLE VOOS(
     id_voo INT PRIMARY KEY,
@@ -161,7 +174,7 @@ CREATE TABLE VOOS(
 );
 
 
-
+-- (Made by Vitor Hugo Amaro)
 -- tabela tickets
 CREATE TABLE TICKETS(
     id_tikets int primary key,
@@ -176,7 +189,7 @@ CREATE TABLE TICKETS(
 
 
 
-
+-- (Made by Vitor Hugo Amaro)
 -- Criação de um backup do assento da aeronave de acordo com o id do voo
 DECLARE
    nome_tabela VARCHAR2(50);
@@ -195,13 +208,13 @@ END;
 
 
 
-
+-- (Made by Vitor Hugo Amaro)
 -- DECLARAÇÃO PARA O STORED PRODUCED preencher tabela ASSENTOS
 DECLARE
     v_numero_de_identificacao NUMBER := 1;  -- Substitua pelo valor desejado
     v_qtd_assento NUMBER;
     v_registro int;
-
+-- (Made by Vitor Hugo Amaro)
 BEGIN
     SELECT MAX(Numero_de_identificacao) INTO v_numero_de_identificacao FROM aeronaves;
 
@@ -215,7 +228,7 @@ BEGIN
     COMMIT;
 END;
 
-
+-- (Made by Vitor Hugo Amaro)
 --stored produced
 create or replace NONEDITIONABLE PROCEDURE INSERIR_ASSENTOS (
     p_numero_de_identificacao IN NUMBER,
