@@ -54,6 +54,7 @@ LISTAR-AEROPORTO
 */
 // ==============================================  1-SESSÃO-AERONAVES ================================================================================================
 // ------------------------------------------------------------------------------------------------ LISTAR-AERONAVE
+// MADE BY NICOLAS KEISMANAS 
 app.get("/listarAeronaves", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
     let cr = { status: "ERROR", message: "", payload: undefined, }; //VARIAVEL PARA RECEBER O CR
@@ -141,7 +142,8 @@ app.put("/inserirAeronave", (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 // ------------------------------------------------------------------------------------------------ LISTAR-ASSENTO-AERONAVE-DO-VOO
 app.get("/listarAssentos", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    //ESTE CODIGO ELE DA UM SELECT EM UMA TABELA QUE É UMA COPIA DA STORED PRODUCED DO ASSENTO DAS AERONAVES, ELAS SÃO FEITAS AUTOMATICAMENTE, FOI FEITO UM BACKUP PARA NAO INTERFERIR
+    //ESTE CODIGO ELE DA UM SELECT EM UMA TABELA QUE É UMA COPIA DA STORED PRODUCED DO ASSENTO DAS AERONAVES, ELAS SÃO FEITAS AUTOMATICAMENTE,
+    // FOI FEITO UM BACKUP PARA NAO INTERFERIR
     //O STATUS DA AERONAVE, E APENAS O STATUS,DELETE DO ASSENTO DO VOO 
     const Numero_de_identificacao = req.query.id_voo;
     console.log('->>', Numero_de_identificacao);
@@ -1039,21 +1041,26 @@ app.put("/inserirTrecho", (req, res) => __awaiter(void 0, void 0, void 0, functi
 app.delete("/deleteTrecho", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const idTrecho = req.body.id_trecho;
     console.log(`recebendo ${idTrecho}`);
+    // prepara um objeto para resposta da requisição do cliente
     let cr = {
         status: "ERROR",
         message: "",
         payload: undefined,
     };
     try {
+        // abre conexao com bd
         const connection = yield oracledb_1.default.getConnection({
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PASSWORD,
             connectionString: process.env.ORACLE_CONN_STR,
         });
+        // prepara e executa uma intrucao sql
         const cmdDeleteTrecho = 'DELETE SYS.TRECHOS WHERE ID_TRECHO = :1';
         const dados = [idTrecho];
         let resDelete = yield connection.execute(cmdDeleteTrecho, dados);
+        // efetua commit para gravar inserçoes no bd
         yield connection.commit();
+        // verifica se a inserçao de dados foi bem sucedida
         const rowsDeleted = resDelete.rowsAffected;
         if (rowsDeleted !== undefined && rowsDeleted === 1) {
             cr.status = "SUCCESS";
@@ -1063,6 +1070,7 @@ app.delete("/deleteTrecho", (req, res) => __awaiter(void 0, void 0, void 0, func
             cr.message = "Trecho não excluído. Verifique se o código informado está correto.";
         }
     }
+    // em caso de erro o codigo prepara uma resposta de acordo
     catch (e) {
         if (e instanceof Error) {
             cr.message = e.message;
@@ -1106,12 +1114,14 @@ app.put("/NovoTicket", (req, res) => __awaiter(void 0, void 0, void 0, function*
         yield conn.commit();
         // obter a informação de quantas linhas foram inseridas. 
         // neste caso precisa ser exatamente 1
+        // verifica se a inserção foi bem sucedida
         const rowsInserted = resInsert.rowsAffected;
         if (rowsInserted !== undefined && rowsInserted === 1) {
             cr.status = "SUCCESS";
             cr.message = "novo ticket emitido.";
         }
     }
+    // em caso de erro o codigo da a resposta relatando
     catch (e) {
         if (e instanceof Error) {
             cr.message = e.message;
