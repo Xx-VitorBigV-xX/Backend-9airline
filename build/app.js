@@ -911,6 +911,7 @@ app.put("/inserirvoo", (req, res) => __awaiter(void 0, void 0, void 0, function*
                        WHERE fk_aeronave = ${NumeroAeronave}';
  
  END;`;
+        console.log(`>>>>>> ${NumeroAeronave}`);
         //existe duas strings de comando, o 'cmdinsertvoo'  -> o primeiro insere uma nova linha na tabela voo 
         // a segunda é um begin que tem uma declaração que vai criar uma tabela backup de assentos de acordo com as informações especificadas
         yield conn.execute(criaAssentosDoVoo);

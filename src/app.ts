@@ -1,4 +1,5 @@
 // ==============================================  PREPARAÇÃO ================================================================================================
+// (Made by Vitor Hugo Amaro)
 //a Application Programming Interface (Interface de Programação de Aplicação) 'função distinta'
 // recursos/modulos necessarios.
 //Iportações 
@@ -7,18 +8,18 @@ import oracledb, { Connection, ConnectionAttributes } from "oracledb";
 import dotenv from "dotenv";
 import cors from "cors";
 import { CONNREFUSED } from "dns";
-
+// (Made by Vitor Hugo Amaro)
 // preparar o servidor web de backend na porta 3000
 const app = express();//fremework
 const port = 3000;
 // preparar o servidor para dialogar no padrao JSON 
 app.use(express.json());
 app.use(cors());
-
+// (Made by Vitor Hugo Amaro)
 // já configurando e preparando o uso do dotenv para 
 // todos os serviços.
 dotenv.config();
-
+// (Made by Vitor Hugo Amaro)
 // criando um TIPO chamado CustomResponse.
 // Esse tipo vamos sempre reutilizar.
 type CustomResponse = {
@@ -55,7 +56,7 @@ LISTAR-AEROPORTO
 
 // ==============================================  1-SESSÃO-AERONAVES ================================================================================================
 
-
+// (Made by Vitor Hugo Amaro)
 // ------------------------------------------------------------------------------------------------ LISTAR-AERONAVE
 app.get("/listarAeronaves", async(req,res)=>{ 
   //UTILIZANDO A REQUISIÇÃO GET PARA FAZER UM SELECT NA TABELA AREONAVES
@@ -965,7 +966,7 @@ app.put("/inserirvoo", async(req,res)=>{
                        WHERE fk_aeronave = ${NumeroAeronave}';
  
  END;`; 
-
+console.log(`>>>>>> ${NumeroAeronave}`)
  //existe duas strings de comando, o 'cmdinsertvoo'  -> o primeiro insere uma nova linha na tabela voo 
  // a segunda é um begin que tem uma declaração que vai criar uma tabela backup de assentos de acordo com as informações especificadas
  await conn.execute(criaAssentosDoVoo);
