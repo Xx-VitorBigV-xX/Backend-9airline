@@ -54,6 +54,7 @@ START WITH 1 INCREMENT BY 1;
 -- TABELAS--
 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela aeronave
 CREATE TABLE AERONAVES(
     Numero_de_identificacao INT PRIMARY KEY,
@@ -64,6 +65,7 @@ CREATE TABLE AERONAVES(
     qtdAssento INT NOT NULL
 ); 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela aeroporto
 CREATE TABLE AEROPORTOS(
     id_aeroporto INT PRIMARY KEY,
@@ -74,12 +76,14 @@ CREATE TABLE AEROPORTOS(
             REFERENCES CIDADES(NOME)
 ); 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela cidades
 CREATE TABLE CIDADES(
     id_cidade INT PRIMARY KEY,
     nome VARCHAR2(44) UNIQUE
 ); 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela trechos
 CREATE TABLE TRECHOS(
     id_trecho INT PRIMARY KEY,
@@ -125,6 +129,7 @@ CREATE TABLE TRECHOS(
         
 );
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela assentos
 create table assentos(
 	codigo integer primary key,
@@ -136,6 +141,7 @@ create table assentos(
         REFERENCES AERONAVES(Numero_de_identificacao)
 );
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela voos
 CREATE TABLE VOOS(
     id_voo INT PRIMARY KEY,
@@ -175,6 +181,7 @@ CREATE TABLE VOOS(
 
 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- tabela tickets
 CREATE TABLE TICKETS(
     id_tikets int primary key,
@@ -190,6 +197,7 @@ CREATE TABLE TICKETS(
 
 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- Criação de um backup do assento da aeronave de acordo com o id do voo
 DECLARE
    nome_tabela VARCHAR2(50);
@@ -209,6 +217,7 @@ END;
 
 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 -- DECLARAÇÃO PARA O STORED PRODUCED preencher tabela ASSENTOS
 DECLARE
     v_numero_de_identificacao NUMBER := 1;  -- Substitua pelo valor desejado
@@ -229,6 +238,7 @@ BEGIN
 END;
 
 -- (Made by Vitor Hugo Amaro)
+// (Made by Gustavo Bicaletto)
 --stored produced
 create or replace NONEDITIONABLE PROCEDURE INSERIR_ASSENTOS (
     p_numero_de_identificacao IN NUMBER,
